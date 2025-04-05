@@ -7,7 +7,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
-import { Icon, IconName } from "@/components/ui/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUnreadMessages } from "@/components/hooks/useUnreadMessages";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";

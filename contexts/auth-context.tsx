@@ -69,6 +69,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Get wallet state from wagmi
   const { address, isConnected, chainId } = useAccount();
+
+  // --- ADD LOGGING HERE ---
+  console.log(
+    `[AuthProvider Render] isConnected: ${isConnected}, address: ${address}, chainId: ${chainId}`
+  );
+  // --- END LOGGING ---
+
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   const router = useRouter();
@@ -161,24 +168,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // 0. Check if a valid server-side session already exists
     try {
-      const sessionCheckRes = await fetch("/api/auth/user");
-      if (sessionCheckRes.ok) {
-        console.log(
-          "Existing valid SIWE session found via /api/auth/user check."
-        );
-        const userData = await sessionCheckRes.json();
-        setIsSiweVerified(true);
-        setUser(userData);
-        performRedirectIfNeeded(); // Redirect if needed after finding session
-        return true;
-      }
       console.log(
-        "/api/auth/user check failed or returned non-ok status, proceeding with SIWE."
+        "🕵️ [SIWE] Checking for existing session via /api/auth/user..."
       );
+      const sessionCheckRes = await fetch("/api/auth/user");
+      console.log(`🕵️ [SIWE] /api/auth/user status: ${sessionCheckRes.status}`);
+
+      if (sessionCheckRes.ok) {
+        const userData = await sessionCheckRes.json();
+        console.log("🕵️ [SIWE] /api/auth/user response data:", userData);
+
+        // --- MODIFIED CHECK: Ensure we got actual user data, not just OK status ---
+        if (userData && userData.id && userData.auth_type === "siwe") {
+          console.log(
+            "✅ [SIWE] Existing valid SIWE session confirmed by /api/auth/user data."
+          );
+          setIsSiweVerified(true);
+          setUser(userData);
+          performRedirectIfNeeded(); // Redirect if needed after finding session
+          return true; // Exit early only if session is truly valid
+        } else {
+          console.log(
+            "⚠️ [SIWE] /api/auth/user returned OK, but data is invalid/missing. Proceeding with SIWE flow."
+          );
+        }
+        // --- END MODIFIED CHECK ---
+      } else {
+        console.log(
+          "ℹ️ [SIWE] /api/auth/user check failed or returned non-ok status. Proceeding with SIWE flow."
+        );
+      }
     } catch (sessionError) {
       console.error(
-        "Error checking existing session with /api/auth/user:",
+        "❌ [SIWE] Error checking existing session with /api/auth/user:",
         sessionError
+      );
+      console.log(
+        "ℹ️ [SIWE] Error occurred during /api/auth/user check. Proceeding with SIWE flow."
       );
     }
 
@@ -221,22 +247,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
         nonce,
       });
       const messageToSign = message.prepareMessage();
+      console.log("📄 [SIWE] Chain ID:", chainId);
+      console.log("📄 [SIWE] Message to sign:", messageToSign);
 
       // 4. Request signature from user
-      console.log("Requesting signature...");
+      console.log("✍️ [SIWE] Requesting signature...");
       const signature = await signMessageAsync({ message: messageToSign });
+      console.log("🔑 [SIWE] Signature received:", signature);
 
       // 5. Verify signature with backend
-      console.log("Verifying signature...");
+      console.log("☁️ [SIWE] Verifying signature with backend...");
       const verifyRes = await fetch("/api/auth/siwe/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: messageToSign, signature }),
       });
 
+      // Log the raw response regardless of status
+      console.log(
+        `☁️ [SIWE] Verification response status: ${verifyRes.status}`
+      );
+      let responseBodyText = "<Could not read body>";
+      try {
+        responseBodyText = await verifyRes.text();
+        console.log(
+          `☁️ [SIWE] Verification response body: ${responseBodyText}`
+        );
+      } catch (bodyError) {
+        console.error("Error reading verification response body:", bodyError);
+      }
+
       if (!verifyRes.ok) {
-        const errorData = await verifyRes.json();
-        throw new Error(errorData.error || "SIWE verification failed");
+        // Try to parse JSON error only if text parsing succeeded
+        let errorData = {
+          error: `Verification failed with status ${verifyRes.status}. Response: ${responseBodyText}`,
+        };
+        try {
+          if (responseBodyText !== "<Could not read body>") {
+            errorData = JSON.parse(responseBodyText);
+          }
+        } catch (parseError) {
+          console.error("Failed to parse verification error JSON:", parseError);
+        }
+        throw new Error(
+          errorData.error ||
+            `Verification failed with status ${verifyRes.status}`
+        );
       }
 
       // 6. On success, update state
@@ -268,19 +324,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Automatically trigger SIWE verification when wallet connects
   useEffect(() => {
+    // Add logging here to check conditions
+    console.log(
+      `[Auth Effect] Checking conditions: isConnected=${isConnected}, address=${!!address}, !isSiweVerified=${!isSiweVerified}, !isVerifyingSiwe=${!isVerifyingSiwe}`
+    );
+
     if (isConnected && address && !isSiweVerified && !isVerifyingSiwe) {
       console.log(
         "Wallet connected, triggering ensureSiweVerified automatically..."
       );
       ensureSiweVerified();
     }
-  }, [
-    isConnected,
-    address,
-    isSiweVerified,
-    isVerifyingSiwe,
-    ensureSiweVerified,
-  ]);
+  }, [isConnected, address, isSiweVerified, isVerifyingSiwe]);
 
   // Sign up with email/password
   const signUpWithEmail = async (email: string, password: string) => {

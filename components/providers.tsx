@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import "@rainbow-me/rainbowkit/styles.css";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import { createContext, useContext, useState, useEffect } from "react";
+// import { useAccount } from "wagmi"; // Remove this if not used elsewhere in THIS file
 
 // Create a React Query client
 const queryClient = new QueryClient();
@@ -36,6 +37,13 @@ export function useWalletSheetContext() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // --- Remove the logging code added previously ---
+  /*
+  const { isConnected: isWagmiConnected, address: wagmiAddress } = useAccount();
+  console.log(`[Providers Render] isWagmiConnected: ${isWagmiConnected}, wagmiAddress: ${wagmiAddress}`);
+  */
+  // --- End Removal ---
+
   const [isWalletSheetOpen, setIsWalletSheetOpen] = useState(false); // Restore state
   const [mounted, setMounted] = useState(false);
 
@@ -60,12 +68,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }}
           >
             <AuthProvider>
-              {mounted && (
-                <>
-                  {children}
-                  <ServiceWorkerRegistration />
-                </>
-              )}
+              {/* {mounted && ( */}
+              <>
+                {children}
+                <ServiceWorkerRegistration />
+              </>
+              {/* )} */}
             </AuthProvider>
           </WalletSheetContext.Provider>
         </RainbowKitProvider>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import WalletProfileSheet from "@/components/wallet/WalletProfileSheet";
 import Image from "next/image";

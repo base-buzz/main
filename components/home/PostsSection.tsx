@@ -198,24 +198,9 @@ export function PostsSection({
           `Post ${index}: id=${post.id}, createdAt=${post.createdAt}, typeof=${typeof post.createdAt}`
         );
 
-        // Set default created date for posts with undefined dates
-        // This generates staggered times in the past few minutes/hours for a natural timeline
-        if (!post.createdAt) {
-          // Generate timestamps from a few seconds ago to 2 days ago
-          const randomMinutes = Math.floor(Math.random() * 60 * 24 * 2); // Up to 2 days in minutes
-          const date = new Date();
-          date.setMinutes(date.getMinutes() - randomMinutes);
-          post.createdAt = date.toISOString();
-          console.log(`Added timestamp for post ${index}: ${post.createdAt}`);
-        }
-
-        // Get media URL - use post's media if available, otherwise use sample image for some posts
+        // Get media URL - use post's media if available, otherwise set to undefined
         const mediaUrl =
-          post.media && post.media.length > 0
-            ? post.media[0]
-            : index % 3 === 0
-              ? sampleImages[index % sampleImages.length]
-              : undefined;
+          post.media && post.media.length > 0 ? post.media[0] : undefined;
 
         // Enhanced content with emojis if needed
         const enhancedContent = enhanceContent(post.content, index);

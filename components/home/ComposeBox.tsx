@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, Post } from "@/types/interfaces";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { postApi } from "@/lib/api";
 
 interface ComposeBoxProps {
   user: User;
@@ -41,50 +42,58 @@ export function ComposeBox({ user, onPostCreated }: ComposeBoxProps) {
 
   const effectiveUser = user;
 
+  // Reset isSubmitting state if there was an error and user types again
+  useEffect(() => {
+    if (error) {
+      setIsSubmitting(false);
+      console.log(
+        "ComposeBox useEffect: Reset isSubmitting due to error state change."
+      );
+    }
+  }, [content, error]); // Run when content or error changes
+
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("ComposeBox handleSubmit triggered!");
     e.preventDefault();
 
     if (!content.trim()) {
+      console.log("ComposeBox handleSubmit: Content empty, returning.");
       return;
     }
 
+    console.log("ComposeBox handleSubmit: Setting loading state.");
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Placeholder for API call - in a production app, this would call an API
-      console.log("Creating post with content:", content);
+      console.log("ComposeBox: Attempting to call postApi.createPost...");
+      // Call the actual API to create the post
+      const newPost = await postApi.createPost(effectiveUser.id, content);
+      console.log("ComposeBox: postApi.createPost call finished.");
 
-      // Create a fake post for now
-      const newPost: Post = {
-        id: `temp-${Date.now()}`,
-        userId: user.id,
-        userName: user.display_name || "Anonymous",
-        userHandle: user.address ? `@${user.address.substring(0, 8)}` : "@anon",
-        userAvatar: user.avatar_url || "https://i.pravatar.cc/150?img=1",
-        verified: user.tier === "gold" || user.tier === "diamond",
-        content,
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        retweets: 0,
-        comments: [],
-        media: [],
-      };
-
-      // Notify parent component
-      if (onPostCreated) {
+      // Notify parent component with the REAL post from the API
+      if (onPostCreated && newPost) {
+        console.log("ComposeBox: Calling onPostCreated callback.");
         onPostCreated(newPost);
       }
 
       // Clear form
+      console.log("ComposeBox: Clearing form.");
       setContent("");
       setIsFocused(false);
     } catch (err) {
-      console.error("Error creating post:", err);
+      // Error already logged in catch block
       setError("Failed to create post. Please try again.");
     } finally {
+      console.log(
+        "ComposeBox handleSubmit: Resetting loading state in finally block."
+      );
       setIsSubmitting(false);
     }
+  };
+
+  const handleButtonClick = () => {
+    console.log("ComposeBox SUBMIT BUTTON onClick triggered!");
   };
 
   const charsRemaining = MAX_CHARS - content.length;
@@ -224,6 +233,7 @@ export function ComposeBox({ user, onPostCreated }: ComposeBoxProps) {
                   size="sm"
                   className="h-9 rounded-full bg-primary px-4 font-semibold hover:bg-primary/90 disabled:bg-primary/50"
                   disabled={!content.trim() || isSubmitting}
+                  onClick={handleButtonClick}
                 >
                   {isSubmitting ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />

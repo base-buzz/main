@@ -9,12 +9,8 @@ import {
   PanInfo,
   animate,
 } from "framer-motion";
-import { useAccount } from "wagmi";
-import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "./DesktopNavigation";
-import { NavIcon } from "@/components/ui/nav-icon";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { useAccount } from "wagmi";
 
 interface MobileLayoutProps {
   children: React.ReactNode;

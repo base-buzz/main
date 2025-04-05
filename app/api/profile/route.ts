@@ -1,31 +1,65 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getIronSession } from "iron-session"; // Import getIronSession
+import { sessionOptions, SessionData } from "@/lib/session"; // Import session types/options
+import { supabaseServer } from "@/lib/supabase/server"; // Import server client
 
 import type { Database } from "@/types/supabase"; // Assuming you have Supabase types generated
 
 export async function PATCH(request: Request) {
   const cookieStore = cookies();
-  const supabase = createRouteHandlerClient<Database>({
+  // Keep user client for user ID lookup if needed
+  const supabaseUserClient = createRouteHandlerClient<Database>({
     cookies: () => cookieStore,
   });
 
   try {
-    // 1. Get the session and user
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    // 1. Authenticate using Iron Session / SIWE
+    console.log("🔒 [PATCH /api/profile] Verifying SIWE session...");
+    const session = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions
+    );
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session.siwe?.address) {
+      console.log("❌ [PATCH /api/profile] No SIWE data in session.");
+      return NextResponse.json(
+        { error: "Unauthorized - Missing SIWE session" },
+        { status: 401 }
+      );
     }
+    const userAddress = session.siwe.address;
+    console.log(
+      `✅ [PATCH /api/profile] Authenticated via SIWE for address: ${userAddress}`
+    );
 
-    const user = session.user;
+    // 2. Find the user ID associated with the address
+    //    (We need this to ensure we update the correct user record)
+    const { data: userData, error: userFindError } = await supabaseUserClient
+      .from("users")
+      .select("id")
+      .ilike("address", userAddress)
+      .single();
 
-    // 2. Parse the request body
+    if (userFindError || !userData?.id) {
+      console.error(
+        "❌ [PATCH /api/profile] Could not find user ID for address:",
+        userAddress,
+        userFindError
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - User mapping failed" },
+        { status: 401 }
+      );
+    }
+    const userId = userData.id;
+    console.log(`✅ [PATCH /api/profile] Found user ID: ${userId}`);
+
+    // 3. Parse the request body
     const body = await request.json();
 
-    // Basic validation/filtering (consider Zod for robust validation)
+    // 4. Filter allowed updates (same as before)
     const allowedUpdates: Partial<
       Database["public"]["Tables"]["users"]["Update"]
     > = {};
@@ -49,24 +83,32 @@ export async function PATCH(request: Request) {
     // Add updated_at timestamp
     allowedUpdates.updated_at = new Date().toISOString();
 
-    // 3. Update the user profile in the database
-    const { data, error } = await supabase
+    // 5. Update the user profile using supabaseServer (service role)
+    console.log(
+      `🔄 [PATCH /api/profile] Updating profile for user ID: ${userId}`
+    );
+    const { data, error: updateError } = await supabaseServer // Use service role client
       .from("users")
       .update(allowedUpdates)
-      .eq("id", user.id)
-      .select() // Optionally select the updated row to return it
-      .single(); // Expecting only one row to be updated
+      .eq("id", userId) // Update based on the verified user ID
+      .select()
+      .single();
 
-    if (error) {
-      console.error("Error updating profile:", error);
-      // Provide a more specific error message if possible based on error.code
+    if (updateError) {
+      console.error(
+        "❌ [PATCH /api/profile] Error updating profile:",
+        updateError
+      );
       return NextResponse.json(
-        { error: "Failed to update profile", details: error.message },
+        { error: "Failed to update profile", details: updateError.message },
         { status: 500 }
       );
     }
 
-    // 4. Return success response
+    // 6. Return success response
+    console.log(
+      `✅ [PATCH /api/profile] Profile updated successfully for user ID: ${userId}`
+    );
     return NextResponse.json({
       message: "Profile updated successfully",
       user: data,

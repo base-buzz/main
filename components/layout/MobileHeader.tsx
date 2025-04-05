@@ -3,20 +3,11 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Icon } from "@/components/ui/icons";
 import { useWalletSheet } from "@/hooks/useWalletSheet";
 import MobileSheetNav from "./MobileSheetNav";
 import { useAccount } from "wagmi";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose,
-} from "@/components/ui/sheet";
 import { WalletSheet } from "@/components/ui/wallet/wallet-sheet";
-import { X } from "lucide-react";
 import { HomeTabs } from "@/components/home/HomeTabs";
 
 interface Tab {
@@ -32,13 +23,6 @@ const defaultTabs: Tab[] = [
   { id: "buildin", label: "Buildin", path: "/home/buildin" },
   { id: "canto", label: "Canto", path: "/home/canto" },
 ];
-
-interface MobileHeaderProps {
-  title?: string;
-  showTabs?: boolean;
-  tabs?: Tab[];
-  showBackButton?: boolean;
-}
 
 export default function MobileHeader() {
   const pathname = usePathname();
