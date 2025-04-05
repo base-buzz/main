@@ -11,8 +11,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/registry/new-york/ui/select";
-import { Style, styles } from "@/registry/registry-styles";
+} from "@/components/ui/select";
+
+// Define styles locally for now
+const styles = [
+  { name: "new-york", label: "New York" },
+  { name: "default", label: "Default" },
+];
 
 export function StyleSwitcher({ className, ...props }: SelectTriggerProps) {
   const [config, setConfig] = useConfig();
@@ -20,7 +25,7 @@ export function StyleSwitcher({ className, ...props }: SelectTriggerProps) {
   return (
     <Select
       value={config.style}
-      onValueChange={(value: Style["name"]) =>
+      onValueChange={(value: string) =>
         setConfig({
           ...config,
           style: value,
@@ -30,7 +35,7 @@ export function StyleSwitcher({ className, ...props }: SelectTriggerProps) {
       <SelectTrigger
         className={cn(
           "h-7 w-[145px] text-xs [&_svg]:h-4 [&_svg]:w-4",
-          className,
+          className
         )}
         {...props}
       >

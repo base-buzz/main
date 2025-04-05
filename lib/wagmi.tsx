@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable turbo/no-undeclared-env-vars */
 
 import React from "react";
 import "@rainbow-me/rainbowkit/styles.css";

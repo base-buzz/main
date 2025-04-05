@@ -15,10 +15,10 @@ import { HomeTabs } from "@/components/home/HomeTabs";
 export default function HomePage() {
   const { isAuthenticated, isWalletConnected } = useAuth();
   const { user, isLoading: userLoading } = useCurrentUser();
+  const pathname = usePathname();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pathname = usePathname();
 
   // Fetch posts when authentication status changes
   useEffect(() => {
@@ -53,13 +53,13 @@ export default function HomePage() {
     };
 
     fetchPosts();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isWalletConnected]);
 
   const handlePostCreated = (newPost: Post) => {
     setPosts((prevPosts) => [newPost, ...prevPosts]);
   };
 
-  // Show loading state while auth or user data is loading
+  // Show loading state while auth is loading (removed userLoading check)
   if (userLoading || loading) {
     return (
       <div className="flex h-full items-center justify-center py-20">
@@ -97,7 +97,7 @@ export default function HomePage() {
         </div>
 
         <div className="divide-y divide-border">
-          {/* Post creation area with collapsible form */}
+          {/* Restore Post creation area */}
           {user && (
             <div className="hidden p-4 md:block">
               <ComposeBox user={user} onPostCreated={handlePostCreated} />

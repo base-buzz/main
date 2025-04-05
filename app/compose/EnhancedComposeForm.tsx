@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { Post } from "@/types/interfaces";
 import { postApi } from "@/lib/api";
-import { Button } from "@/registry/new-york/ui/button";
-import { Textarea } from "@/registry/new-york/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Popover,
   PopoverContent,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CheckIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NextImage from "next/image";
 
 interface EnhancedComposeFormProps {
   userId: string;
@@ -231,11 +232,12 @@ export default function EnhancedComposeForm({
                         setAudienceMenuOpen(false);
                       }}
                     >
-                      <div className="h-10 w-10 overflow-hidden rounded-md bg-muted">
-                        <img
+                      <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
+                        <NextImage
                           src={community.icon}
                           alt={community.name}
-                          className="h-full w-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       </div>
                       <div className="flex-1 text-left">
@@ -281,17 +283,22 @@ export default function EnhancedComposeForm({
             }`}
           >
             {media.map((url, index) => (
-              <div key={index} className="relative">
-                <img
+              <div
+                key={index}
+                className="relative aspect-video overflow-hidden rounded-lg"
+              >
+                <NextImage
                   src={url}
                   alt={`Upload ${index + 1}`}
-                  className="max-h-[200px] w-full rounded-lg object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
                 <Button
                   type="button"
                   variant="secondary"
                   size="icon"
-                  className="absolute right-2 top-2 h-6 w-6 rounded-full bg-background/80 p-1"
+                  className="absolute right-2 top-2 z-10 h-6 w-6 rounded-full bg-background/80 p-1"
                   onClick={() => handleRemoveMedia(index)}
                 >
                   <X className="h-4 w-4" />
@@ -328,6 +335,8 @@ export default function EnhancedComposeForm({
               }
               className="rounded-full text-primary hover:bg-primary/10"
             >
+              {/* Disable alt-text rule for lucide icon */}
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
               <Image className="h-5 w-5" />
             </Button>
             <Button

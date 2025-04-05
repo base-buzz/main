@@ -1,43 +1,34 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { userApi, postApi } from "@/lib/api";
 import { Post, User } from "@/types/interfaces";
 import PostComponent from "@/components/post/PostComponent";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/registry/new-york/ui/tabs";
-import { Button } from "@/registry/new-york/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   EditIcon,
   CalendarIcon,
   MapPinIcon,
   MoreHorizontal,
 } from "lucide-react";
-import { Card } from "@/registry/new-york/ui/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/registry/new-york/ui/avatar";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import EditProfileModal from "@/components/modals/EditProfileModal";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const profileId = params?.id as string;
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const profileUserId = params?.id as string;
   const {
     user: currentUser,
-    loading: currentUserLoading,
+    isLoading: currentUserLoading,
     updateUserProfile,
   } = useCurrentUser();
   const [profileUser, setProfileUser] = useState<User | null>(null);
@@ -47,16 +38,28 @@ export default function ProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
 
-  const isOwnProfile = currentUser?.id === profileId || profileId === "me";
+  useEffect(() => {
+    if (!profileUserId) {
+      setError("Invalid profile ID");
+      setLoading(false);
+      console.error("Profile user ID is missing from params");
+    }
+  }, [profileUserId]);
 
-  // Format join date
+  const isOwnProfile = currentUser?.id === profileUserId;
+
   const formatJoinDate = (dateString?: string) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+      });
+    } catch {
+      return "Invalid date";
+    }
   };
 
-  // Check for locally stored user data
   const checkLocalStorage = (userId: string) => {
     if (typeof window !== "undefined") {
       const localStorageKey = `basebuzz_user_${userId}`;
@@ -74,11 +77,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!profileUserId) return;
+
       setLoading(true);
       try {
-        // If the profile is 'me', use the current user's ID
         const actualProfileId =
-          profileId === "me" && currentUser ? currentUser.id : profileId;
+          profileUserId === "me" && currentUser
+            ? currentUser.id
+            : profileUserId;
 
         if (!actualProfileId) {
           setError("User not found");
@@ -86,19 +92,16 @@ export default function ProfilePage() {
           return;
         }
 
-        // Check for locally stored data first
         const localUserData = checkLocalStorage(actualProfileId);
 
         if (localUserData) {
           console.log("Using locally stored user data", localUserData);
           setProfileUser(localUserData);
         } else {
-          // Fetch user data from API
           const userData = await userApi.getUserById(actualProfileId);
           setProfileUser(userData);
         }
 
-        // Fetch user's posts
         const postsData = await postApi.getPostsByUserId(actualProfileId);
         setPosts(postsData);
       } catch (err) {
@@ -109,16 +112,18 @@ export default function ProfilePage() {
       }
     };
 
-    if (!authLoading && !currentUserLoading) {
+    if (!currentUserLoading) {
       fetchData();
     }
-  }, [profileId, authLoading, currentUserLoading, currentUser]);
+  }, [profileUserId, currentUserLoading, currentUser]);
 
   const handleSaveProfile = (updatedUser: User) => {
     setProfileUser(updatedUser);
 
     if (isOwnProfile && updateUserProfile) {
-      updateUserProfile(updatedUser);
+      updateUserProfile(updatedUser).catch((err) => {
+        console.error("Failed to update profile in context:", err);
+      });
     }
   };
 
@@ -126,12 +131,8 @@ export default function ProfilePage() {
     setActiveTab(value);
   };
 
-  if (loading || authLoading || currentUserLoading) {
-    return (
-      <div className="flex h-full items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  if (loading || currentUserLoading) {
+    return <LoadingSpinner />;
   }
 
   if (error || !profileUser) {
@@ -150,44 +151,61 @@ export default function ProfilePage() {
     );
   }
 
-  // Create tabs for mobile header
+  const userHandle =
+    profileUser.ens_name ||
+    (profileUser.address
+      ? `${profileUser.address.substring(0, 6)}...${profileUser.address.substring(profileUser.address.length - 4)}`
+      : "user");
+
   const profileTabs = [
-    { id: "posts", label: "Posts", path: `/profile/${profileId}?tab=posts` },
-    { id: "media", label: "Media", path: `/profile/${profileId}?tab=media` },
-    { id: "likes", label: "Likes", path: `/profile/${profileId}?tab=likes` },
+    {
+      id: "posts",
+      label: "Posts",
+      path: `/profile/${profileUserId}?tab=posts`,
+    },
+    {
+      id: "media",
+      label: "Media",
+      path: `/profile/${profileUserId}?tab=media`,
+    },
+    {
+      id: "likes",
+      label: "Likes",
+      path: `/profile/${profileUserId}?tab=likes`,
+    },
   ];
 
   return (
     <>
-      {/* Mobile Header */}
-      <MobileHeader title={profileUser.alias} showBackButton />
+      <MobileHeader />
 
       <div className="pb-6">
-        {/* Cover Image */}
         <div className="relative h-32 w-full overflow-hidden bg-gradient-to-r from-blue-400 to-purple-500 md:h-48">
-          {profileUser.headerImage && (
-            <img
-              src={profileUser.headerImage}
+          {profileUser.header_url && (
+            <Image
+              src={profileUser.header_url}
               alt="Cover"
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
+              priority
             />
           )}
         </div>
 
-        {/* Profile Info */}
         <div className="px-4">
           <div className="flex justify-between">
-            {/* Avatar */}
             <div className="relative -mt-16">
               <Avatar className="h-24 w-24 border-4 border-background">
-                <AvatarImage src={profileUser.pfp} alt={profileUser.alias} />
+                <AvatarImage
+                  src={profileUser.avatar_url || undefined}
+                  alt={profileUser.display_name || "User"}
+                />
                 <AvatarFallback className="text-2xl">
-                  {profileUser.alias?.substring(0, 2) || "U"}
+                  {profileUser.display_name?.substring(0, 2) || "U"}
                 </AvatarFallback>
               </Avatar>
             </div>
 
-            {/* Actions */}
             <div className="mt-2 flex gap-2">
               {isOwnProfile ? (
                 <Button
@@ -209,12 +227,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* User Details */}
           <div className="mt-3">
-            <h1 className="text-xl font-bold">{profileUser.alias}</h1>
-            <p className="text-muted-foreground">
-              @{profileUser.alias?.toLowerCase().replace(/\s+/g, "_") || "user"}
-            </p>
+            <h1 className="text-xl font-bold">{profileUser.display_name}</h1>
+            <p className="text-muted-foreground">@{userHandle}</p>
 
             {profileUser.bio && <p className="mt-3">{profileUser.bio}</p>}
 
@@ -225,12 +240,10 @@ export default function ProfilePage() {
                   <span>{profileUser.location}</span>
                 </div>
               )}
-              {profileUser.dob && (
-                <div className="flex items-center">
-                  <CalendarIcon className="mr-1 h-4 w-4" />
-                  <span>Joined {formatJoinDate(profileUser.dob)}</span>
-                </div>
-              )}
+              <div className="flex items-center">
+                <CalendarIcon className="mr-1 h-4 w-4" />
+                <span>Joined {formatJoinDate(profileUser.created_at)}</span>
+              </div>
             </div>
 
             <div className="mt-3 flex gap-4 text-sm">
@@ -246,7 +259,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Content Tabs - Desktop */}
         <div className="mt-4 hidden md:block">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="w-full">
@@ -275,7 +287,6 @@ export default function ProfilePage() {
           </Tabs>
         </div>
 
-        {/* Content Tabs - Mobile */}
         <div className="mt-4 md:hidden">
           <div className="grid grid-cols-3 border-b border-border">
             {["posts", "media", "likes"].map((tab) => (
@@ -285,7 +296,7 @@ export default function ProfilePage() {
                   "flex h-[52px] items-center justify-center border-b-2 px-4 font-medium",
                   activeTab === tab
                     ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground",
+                    : "border-transparent text-muted-foreground"
                 )}
                 onClick={() => setActiveTab(tab)}
               >
@@ -302,7 +313,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       {isOwnProfile && profileUser && (
         <EditProfileModal
           user={profileUser}

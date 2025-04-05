@@ -3,8 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ScrollArea, ScrollBar } from "@/registry/new-york/ui/scroll-area";
-import { registryCategories } from "@/registry/registry-categories";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+// Remove registry import
+// import { registryCategories } from "@/registry/registry-categories";
+
+// Provide empty array
+const registryCategories: Array<{
+  name: string;
+  slug: string;
+  hidden: boolean;
+}> = [];
 
 export function BlocksNav() {
   const pathname = usePathname();
@@ -35,7 +44,8 @@ function BlocksNavLink({
   category,
   isActive,
 }: {
-  category: (typeof registryCategories)[number];
+  // Adjust type to match the dummy data structure
+  category: { name: string; slug: string; hidden: boolean };
   isActive: boolean;
 }) {
   if (category.hidden) {

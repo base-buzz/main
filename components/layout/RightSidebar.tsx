@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import WalletProfileSheet from "@/components/wallet/WalletProfileSheet";
+import Image from "next/image";
 
 // Mock data for trending topics
 const trendingTopics = [
@@ -53,8 +54,8 @@ export default function RightSidebar() {
   };
 
   return (
-    <div className="h-full px-3 py-3">
-      <div className="flex flex-col space-y-4">
+    <div className="sticky top-0 h-screen w-80 flex-shrink-0 border-l border-border px-6 py-4">
+      <div className="flex h-full flex-col gap-6">
         {/* Wallet Address */}
         {isConnected && address && (
           <WalletProfileSheet>
@@ -90,7 +91,7 @@ export default function RightSidebar() {
 
         {/* What's happening section */}
         <div className="rounded-2xl bg-accent/50 p-4">
-          <h2 className="mb-4 text-xl font-bold">What's happening</h2>
+          <h2 className="mb-4 text-xl font-bold">What&apos;s happening</h2>
           <div className="space-y-6">
             {trendingTopics.map((topic) => (
               <div key={topic.id} className="cursor-pointer hover:bg-accent/80">
@@ -122,12 +123,14 @@ export default function RightSidebar() {
                 className="flex items-center justify-between"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
+                  <div className="relative h-10 w-10 overflow-hidden rounded-full bg-muted">
                     {profile.profileImage ? (
-                      <img
+                      <Image
                         src={profile.profileImage}
                         alt={profile.username}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="40px"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">

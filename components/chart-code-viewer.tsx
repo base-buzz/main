@@ -6,23 +6,23 @@ import { useThemesConfig } from "@/hooks/use-themes-config";
 import { ChartCopyButton } from "@/components/chart-copy-button";
 import { Chart } from "@/components/chart-display";
 import { V0Button } from "@/components/v0-button";
-import { Button } from "@/registry/new-york/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
-} from "@/registry/new-york/ui/drawer";
+} from "@/components/ui/drawer";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
-} from "@/registry/new-york/ui/sheet";
+} from "@/components/ui/sheet";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/registry/new-york/ui/tabs";
+} from "@/components/ui/tabs";
 
 export function ChartCodeViewer({
   chart,

@@ -6,15 +6,15 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/registry/new-york/ui/tabs";
+} from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/registry/new-york/ui/card";
-import { Input } from "@/registry/new-york/ui/input";
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { postApi } from "@/lib/api";
 import { Post } from "@/types/interfaces";
 import PostComponent from "@/components/post/PostComponent";

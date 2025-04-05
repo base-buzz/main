@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Heart, MessageCircle, Repeat, Share } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Post, User } from "@/types/interfaces";
 import { userApi, postApi } from "@/lib/api";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/registry/new-york/ui/avatar";
-import { Button } from "@/registry/new-york/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { ShowPostsCount } from "@/components/home/ShowPostsCount";
+import Image from "next/image";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface PostComponentProps {
   post: Post;
@@ -55,29 +53,31 @@ export default function PostComponent({
   showPostCount = false,
 }: PostComponentProps) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading } = useCurrentUser();
+  const [postUser, setPostUser] = useState<User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [isRetweeted, setIsRetweeted] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [retweetCount, setRetweetCount] = useState(post.retweets);
   const [showComments, setShowComments] = useState(false);
 
-  // Fetch user information when component mounts (only if needed)
-  React.useEffect(() => {
+  // Fetch user data for the post author
+  useEffect(() => {
     const fetchUser = async () => {
-      // Only fetch if we don't already have user data in the post
-      if (!post.userName || !post.userAvatar) {
-        try {
-          const userData = await userApi.getUserById(post.userId);
-          setUser(userData);
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
+      setLoadingUser(true);
+      try {
+        const fetchedUser = await userApi.getUserById(post.userId);
+        setPostUser(fetchedUser);
+      } catch (error) {
+        console.error("Error fetching user for post:", error);
+        setPostUser(null); // Handle error case
       }
+      setLoadingUser(false);
     };
 
     fetchUser();
-  }, [post.userId, post.userName, post.userAvatar]);
+  }, [post.userId]);
 
   const handlePostClick = (e: React.MouseEvent) => {
     // Prevent navigation if the click was on an interactive element
@@ -92,20 +92,23 @@ export default function PostComponent({
   };
 
   const handleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the post click handler from firing
+    e.stopPropagation();
     if (!currentUserId) return;
-
+    setIsLiked(!isLiked);
+    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
     try {
       if (isLiked) {
-        await postApi.unlikePost(currentUserId, post.id);
-        setLikeCount((prev) => Math.max(0, prev - 1));
+        // Pass only postId
+        await postApi.unlikePost(post.id);
       } else {
-        await postApi.likePost(currentUserId, post.id);
-        setLikeCount((prev) => prev + 1);
+        // Pass only postId
+        await postApi.likePost(post.id);
       }
-      setIsLiked(!isLiked);
     } catch (error) {
       console.error("Error liking/unliking post:", error);
+      // Revert optimistic update on error
+      setIsLiked(!isLiked);
+      setLikeCount(isLiked ? likeCount + 1 : likeCount - 1);
     }
   };
 
@@ -149,11 +152,11 @@ export default function PostComponent({
   };
 
   // Use post data if available, otherwise fall back to fetched user data
-  const displayName = post.userName || user?.alias || "Anonymous";
+  const displayName = post.userName || postUser?.display_name || "Anonymous";
   const displayHandle =
     post.userHandle ||
-    (user?.id ? `@user_${user.id.substring(0, 6)}` : "@user");
-  const avatarSrc = post.userAvatar || user?.pfp;
+    (postUser?.id ? `@user_${postUser.id.substring(0, 6)}` : "@user");
+  const avatarSrc = post.userAvatar || postUser?.avatar_url;
   const isVerified = post.verified || false;
 
   return (
@@ -162,23 +165,27 @@ export default function PostComponent({
       <div
         className={cn(
           "group cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-accent/5 dark:hover:bg-accent/5",
-          isComment && "ml-12 mt-2",
+          isComment && "ml-12 mt-2"
         )}
         onClick={handlePostClick}
       >
         <div className="flex gap-3">
-          <Link
-            href={`/profile/${post.userId}`}
-            className="shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={avatarSrc} alt={displayName} />
-              <AvatarFallback>
-                {displayName.substring(0, 2) || "U"}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <div className="flex flex-shrink-0 pt-1">
+            <Link
+              href={`/profile/${post.userId}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarImage
+                  src={avatarSrc || "https://i.pravatar.cc/150"}
+                  alt={displayName}
+                />
+                <AvatarFallback>
+                  {displayName.substring(0, 1) || "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1">
               <Link
@@ -215,22 +222,26 @@ export default function PostComponent({
                     post.media?.length === 1 && "grid-cols-1",
                     post.media?.length === 2 && "grid-cols-2",
                     post.media?.length === 3 && "grid-cols-2",
-                    post.media?.length === 4 && "grid-cols-2",
+                    post.media?.length === 4 && "grid-cols-2"
                   )}
                 >
                   {post.media.map((media, index) => (
-                    <img
+                    <div
                       key={index}
-                      src={media}
-                      alt={`Post media ${index + 1}`}
                       className={cn(
-                        "w-full rounded-2xl object-cover",
-                        post.media?.length === 1
-                          ? "max-h-[500px]"
-                          : "max-h-[250px]",
-                        post.media?.length === 3 && index === 0 && "col-span-2",
+                        "relative aspect-video overflow-hidden rounded-lg",
+                        post.media?.length === 3 && index === 0 && "col-span-2"
                       )}
-                    />
+                    >
+                      <Image
+                        key={index}
+                        src={media}
+                        alt={`Post media ${index + 1}`}
+                        fill
+                        className={cn("object-cover")}
+                        sizes="(max-width: 768px) 100vw, 500px"
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -253,7 +264,7 @@ export default function PostComponent({
                 <MessageCircle
                   className={cn(
                     "h-[18px] w-[18px]",
-                    showComments && "text-primary",
+                    showComments && "text-primary"
                   )}
                 />
                 <span className="ml-0.5 text-xs">{post.comments.length}</span>
@@ -263,7 +274,7 @@ export default function PostComponent({
                 size="sm"
                 className={cn(
                   "flex h-[20px] items-center gap-1 rounded-[20px] p-0 text-muted-foreground hover:bg-green-500/10 hover:text-green-500",
-                  isRetweeted && "text-green-500",
+                  isRetweeted && "text-green-500"
                 )}
                 onClick={handleRetweet}
               >
@@ -275,7 +286,7 @@ export default function PostComponent({
                 size="sm"
                 className={cn(
                   "flex h-[20px] items-center gap-1 rounded-[20px] p-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-500",
-                  isLiked && "text-red-500",
+                  isLiked && "text-red-500"
                 )}
                 onClick={handleLike}
               >

@@ -3,6 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
@@ -161,10 +162,12 @@ export default function MobileSheetNav() {
                 onClick={() => setOpen(false)}
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary p-2">
-                  <img
+                  <Image
                     src="/black.svg"
                     alt="BaseBuzz"
-                    className="h-5 w-5 invert"
+                    width={20}
+                    height={20}
+                    className="invert"
                   />
                 </div>
               </Link>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { User } from "@/types/interfaces";
-import { Button } from "@/registry/new-york/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,10 +11,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/registry/new-york/ui/dialog";
-import { Input } from "@/registry/new-york/ui/input";
-import { Label } from "@/registry/new-york/ui/label";
-import { Textarea } from "@/registry/new-york/ui/textarea";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EditProfileModalProps {
   user: User;
@@ -28,25 +29,28 @@ export default function EditProfileModal({
   onClose,
   onSave,
 }: EditProfileModalProps) {
-  const [formData, setFormData] = useState<User>({
-    id: "",
-    alias: "",
-    pfp: "",
-    dob: "",
-    location: "",
-    headerImage: "",
-    bio: "",
+  const [formData, setFormData] = useState({
+    display_name: user.display_name || "",
+    avatar_url: user.avatar_url || "",
+    header_url: user.header_url || "",
+    location: user.location || "",
+    bio: user.bio || "",
   });
 
-  // Initialize form data when user prop changes
   useEffect(() => {
     if (user) {
-      setFormData({ ...user });
+      setFormData({
+        display_name: user.display_name || "",
+        avatar_url: user.avatar_url || "",
+        header_url: user.header_url || "",
+        location: user.location || "",
+        bio: user.bio || "",
+      });
     }
   }, [user]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -54,14 +58,26 @@ export default function EditProfileModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Save to local storage
-    const localStorageKey = `basebuzz_user_${user.id}`;
-    localStorage.setItem(localStorageKey, JSON.stringify(formData));
-
-    onSave(formData);
+    const updatedUser: Partial<User> = {
+      display_name: formData.display_name,
+      avatar_url: formData.avatar_url,
+      header_url: formData.header_url,
+      location: formData.location,
+      bio: formData.bio,
+      id: user.id,
+      address: user.address,
+      email: user.email,
+      tier: user.tier,
+      buzz_balance: user.buzz_balance,
+      ens_name: user.ens_name,
+      created_at: user.created_at,
+      updated_at: new Date().toISOString(),
+    };
+    onSave(updatedUser as User);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -76,41 +92,43 @@ export default function EditProfileModal({
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="alias">Display Name</Label>
+              <Label htmlFor="display_name">Name</Label>
               <Input
-                id="alias"
-                name="alias"
-                value={formData.alias}
+                id="display_name"
+                name="display_name"
+                value={formData.display_name}
                 onChange={handleChange}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="pfp">Profile Image URL</Label>
+              <Label htmlFor="avatar_url">Profile Picture URL</Label>
               <Input
-                id="pfp"
-                name="pfp"
-                value={formData.pfp}
+                id="avatar_url"
+                name="avatar_url"
+                value={formData.avatar_url}
                 onChange={handleChange}
                 placeholder="https://example.com/image.jpg"
               />
-              {formData.pfp && (
-                <div className="mt-2 h-16 w-16 overflow-hidden rounded-full">
-                  <img
-                    src={formData.pfp}
+              {formData.avatar_url && (
+                <div className="relative mt-2 h-16 w-16 overflow-hidden rounded-full">
+                  <Image
+                    src={formData.avatar_url}
                     alt="Profile preview"
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="64px"
                   />
                 </div>
               )}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="headerImage">Cover Image URL</Label>
+              <Label htmlFor="header_url">Cover Image URL</Label>
               <Input
-                id="headerImage"
-                name="headerImage"
-                value={formData.headerImage}
+                id="header_url"
+                name="header_url"
+                value={formData.header_url}
                 onChange={handleChange}
                 placeholder="https://example.com/cover.jpg"
               />

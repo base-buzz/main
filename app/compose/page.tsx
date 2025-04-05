@@ -1,43 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-import Link from "next/link";
-import { Button } from "@/registry/new-york/ui/button";
-import { ChevronLeft, X } from "lucide-react";
-import { Icon } from "@/components/ui/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 import EnhancedComposeForm from "./EnhancedComposeForm";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { User } from "@/types/interfaces";
 
 export default function ComposePage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth({ required: true });
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleCancel = () => {
-    router.push("/home");
+    router.back();
   };
 
-  if (authLoading || userLoading) {
-    return (
-      <div className="flex h-full items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="flex h-full items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  if (!user) {
+    return <div>Please log in to compose a post.</div>;
   }
 
   return (
-    <div className="divide-y divide-border">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between bg-background/90 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center">
@@ -47,7 +38,7 @@ export default function ComposePage() {
             className="mr-2 rounded-full"
             onClick={handleCancel}
           >
-            <X className="h-5 w-5" />
+            <XIcon className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">New Post</h1>
         </div>
@@ -61,11 +52,13 @@ export default function ComposePage() {
       {/* Compose form */}
       <div className="p-4">
         <div className="flex gap-3">
-          <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
-            <img
-              src="https://i.pravatar.cc/150?img=3"
-              alt={user.alias || "User"}
-              className="h-full w-full object-cover"
+          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+            <Image
+              src={user.avatar_url || "https://i.pravatar.cc/150?img=3"}
+              alt={user.display_name || "User Avatar"}
+              fill
+              className="object-cover"
+              sizes="40px"
             />
           </div>
           <div className="w-full">

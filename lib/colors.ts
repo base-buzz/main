@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { colors } from "@/registry/registry-colors";
+// Remove registry colors import
+// import { colors } from "@/registry/registry-colors";
+
+// Provide dummy data to prevent crash
+const colors = {};
 
 const colorSchema = z.object({
   name: z.string(),
@@ -46,7 +50,7 @@ export function getColors() {
           colors: color.map((color) => {
             const rgb = color.rgb.replace(
               /^rgb\((\d+),(\d+),(\d+)\)$/,
-              "$1 $2 $3",
+              "$1 $2 $3"
             );
 
             return {
@@ -57,18 +61,18 @@ export function getColors() {
               rgb,
               hsl: color.hsl.replace(
                 /^hsl\(([\d.]+),([\d.]+%),([\d.]+%)\)$/,
-                "$1 $2 $3",
+                "$1 $2 $3"
               ),
               oklch: color.oklch.replace(
                 /^oklch\(([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\)$/,
-                "$1 $2 $3",
+                "$1 $2 $3"
               ),
               foreground: getForegroundFromBackground(rgb),
             };
           }),
         };
       })
-      .filter(Boolean),
+      .filter(Boolean)
   );
 
   return tailwindColors;

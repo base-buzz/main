@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useAccount } from "wagmi";
-import { useAuth } from "@/hooks/useAuth";
-import { Icon } from "@/components/ui/icons";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useState } from "react";
 import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { Icon } from "@/components/ui/icons";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Mock message data
 const messageRequests = [
@@ -113,16 +113,21 @@ const messageRequests = [
 ];
 
 export default function MessagesPage() {
-  const { isAuthenticated, loading } = useAuth({ required: true });
-  const { isConnected } = useAccount();
+  const { user, isLoading } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (loading || !isConnected) {
-    return (
-      <div className="flex h-full items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  const filteredMessages = messageRequests.filter(
+    (message) =>
+      message.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.handle.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user) {
+    return <div>Please log in to view messages.</div>;
   }
 
   return (
@@ -168,17 +173,19 @@ export default function MessagesPage() {
 
       {/* Messages List */}
       <div className="divide-y divide-border">
-        {messageRequests.map((message) => (
+        {filteredMessages.map((message) => (
           <Link
             href={`/messages/${message.id}`}
             key={message.id}
             className="flex items-start gap-3 p-4 hover:bg-accent/5"
           >
-            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
-              <img
+            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
+              <Image
                 src={message.avatar}
                 alt={message.name}
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="40px"
               />
             </div>
             <div className="min-w-0 flex-1">

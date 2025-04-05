@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
@@ -82,14 +83,22 @@ export function DesktopNavigation({ className }: DesktopNavigationProps) {
           className="mb-4 flex h-14 w-14 items-center justify-center rounded-full p-3 hover:bg-accent/10"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary p-2">
-            <img src="/black.svg" alt="BaseBuzz" className="h-5 w-5 invert" />
+            <Image
+              src="/black.svg"
+              alt="BaseBuzz"
+              width={20}
+              height={20}
+              className="invert"
+            />
           </div>
         </Link>
 
         {/* Navigation Items */}
         {NAV_ITEMS.map((item) => {
+          const currentPath = pathname || "/home";
           const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+            currentPath === item.href ||
+            currentPath.startsWith(item.href + "/");
           const Icon = isActive ? item.activeIcon : item.icon;
 
           return (
@@ -99,7 +108,7 @@ export function DesktopNavigation({ className }: DesktopNavigationProps) {
               className={cn(
                 "group flex items-center gap-4 rounded-full p-3",
                 "transition-colors hover:bg-accent/10",
-                isActive && "font-bold",
+                isActive && "font-bold"
               )}
             >
               <motion.div
@@ -115,7 +124,7 @@ export function DesktopNavigation({ className }: DesktopNavigationProps) {
                     "h-[26px] w-[26px]",
                     isActive
                       ? "text-foreground"
-                      : "text-muted-foreground group-hover:text-foreground",
+                      : "text-muted-foreground group-hover:text-foreground"
                   )}
                 />
                 {item.label === "Notifications" && (

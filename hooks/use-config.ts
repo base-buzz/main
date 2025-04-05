@@ -1,12 +1,14 @@
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-import { BaseColor } from "@/registry/registry-base-colors";
-import { Style } from "@/registry/registry-styles";
+// Remove imports for registry types
+// import { BaseColor } from "@/registry/registry-base-colors";
+// import { Style } from "@/registry/registry-styles";
 
 type Config = {
-  style: Style["name"];
-  theme: BaseColor["name"];
+  // Use string type instead of imported types
+  style: string;
+  theme: string;
   radius: number;
   packageManager: "npm" | "yarn" | "pnpm" | "bun";
   installationType: "cli" | "manual";

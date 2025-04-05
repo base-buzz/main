@@ -5,7 +5,7 @@ import { useSelectedLayoutSegment } from "next/navigation";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/registry/new-york/ui/button";
+import { Button } from "@/components/ui/button";
 
 export function ThemeSwitcher() {
   const { setTheme, theme } = useTheme();

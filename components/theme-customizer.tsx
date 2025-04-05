@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useConfig } from "@/hooks/use-config";
 import { copyToClipboardWithMeta } from "@/components/copy-button";
 import { ThemeWrapper } from "@/components/theme-wrapper";
-import { Button } from "@/registry/new-york/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,27 +18,30 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/registry/new-york/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTrigger,
-} from "@/registry/new-york/ui/drawer";
-import { Label } from "@/registry/new-york/ui/label";
+} from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/registry/new-york/ui/popover";
-import { Skeleton } from "@/registry/new-york/ui/skeleton";
+} from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/registry/new-york/ui/tooltip";
-import { BaseColor, baseColors } from "@/registry/registry-base-colors";
+} from "@/components/ui/tooltip";
 
 import "@/styles/mdx.css";
+
+// Provide dummy data - adding minimal structure for cssVars
+const baseColors: Array<{
+  name: string;
+  label: string;
+  activeColor: { light: string; dark: string };
+  cssVars: { light: Record<string, string>; dark: Record<string, string> };
+}> = [];
 
 export function ThemeCustomizer() {
   const [config, setConfig] = useConfig();
@@ -125,7 +128,7 @@ function Customizer() {
             {baseColors
               .filter(
                 (theme) =>
-                  !["slate", "stone", "gray", "neutral"].includes(theme.name),
+                  !["slate", "stone", "gray", "neutral"].includes(theme.name)
               )
               .map((theme) => {
                 const isActive = config.theme === theme.name;
@@ -143,7 +146,7 @@ function Customizer() {
                     }}
                     className={cn(
                       "justify-start",
-                      isActive && "border-2 border-primary",
+                      isActive && "border-2 border-primary"
                     )}
                     style={
                       {
@@ -155,7 +158,7 @@ function Customizer() {
                   >
                     <span
                       className={cn(
-                        "mr-1 flex h-5 w-5 shrink-0 -translate-x-1 items-center justify-center rounded-full bg-[--theme-primary]",
+                        "mr-1 flex h-5 w-5 shrink-0 -translate-x-1 items-center justify-center rounded-full bg-[--theme-primary]"
                       )}
                     >
                       {isActive && <Check className="h-4 w-4 text-white" />}
@@ -185,7 +188,7 @@ function Customizer() {
                   }}
                   className={cn(
                     config.radius === parseFloat(value) &&
-                      "border-2 border-primary",
+                      "border-2 border-primary"
                   )}
                 >
                   {value}
@@ -299,7 +302,7 @@ function CopyCodeButton({
                         theme: activeTheme.name,
                         radius: config.radius,
                       },
-                    },
+                    }
                   );
                 }
                 setHasCopied(false);
@@ -314,7 +317,13 @@ function CopyCodeButton({
   );
 }
 
-function getThemeCode(theme: BaseColor, radius: number) {
+function getThemeCode(
+  theme: {
+    name: string;
+    cssVars: { light: Record<string, string>; dark: Record<string, string> };
+  },
+  radius: number
+) {
   if (!theme) {
     return "";
   }

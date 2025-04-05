@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Post } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -14,6 +14,8 @@ import {
   BarChart2Icon,
   BookmarkIcon,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface PostsSectionProps {
   posts: Array<Post & { showPostCount?: boolean }>;
@@ -36,7 +38,7 @@ export function PostsSection({
         posts.map((post) => ({
           id: post.id,
           createdAt: post.createdAt,
-        })),
+        }))
       );
     }
   }, [posts]);
@@ -71,7 +73,7 @@ export function PostsSection({
       const diffDays = Math.floor(diffHours / 24);
 
       console.log(
-        `Formatting date: ${date}, diff: ${diffSecs}s, ${diffMins}m, ${diffHours}h, ${diffDays}d`,
+        `Formatting date: ${date}, diff: ${diffSecs}s, ${diffMins}m, ${diffHours}h, ${diffDays}d`
       );
 
       // If it's very recent (within 30 seconds), show "now"
@@ -135,7 +137,7 @@ export function PostsSection({
   // Function to generate a handle from display name or address
   const generateHandle = (
     displayName: string | null,
-    address: string | null,
+    address: string | null
   ): string => {
     // If display name is available, convert it to a handle format
     if (displayName) {
@@ -193,7 +195,7 @@ export function PostsSection({
       {posts.map((post, index) => {
         // Debug the post data - what's going on with createdAt
         console.log(
-          `Post ${index}: id=${post.id}, createdAt=${post.createdAt}, typeof=${typeof post.createdAt}`,
+          `Post ${index}: id=${post.id}, createdAt=${post.createdAt}, typeof=${typeof post.createdAt}`
         );
 
         // Set default created date for posts with undefined dates
@@ -235,7 +237,7 @@ export function PostsSection({
           post.userHandle ||
           generateHandle(
             postData.display_name || post.userName,
-            postData.address || userId,
+            postData.address || userId
           );
 
         // Format date - directly use the formatDate function which now has robust error handling
@@ -288,11 +290,13 @@ export function PostsSection({
                   {enhancedContent}
                 </div>
                 {mediaUrl && (
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-border">
-                    <img
+                  <div className="relative mt-3 aspect-video overflow-hidden rounded-2xl border border-border">
+                    <Image
                       src={mediaUrl}
                       alt="Post media"
-                      className="h-auto w-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 500px"
                     />
                   </div>
                 )}

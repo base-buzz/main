@@ -1,32 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { notificationApi, postApi, userApi } from "@/lib/api";
 import { Post, Notification, User } from "@/types/interfaces";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/registry/new-york/ui/tabs";
-import { Button } from "@/registry/new-york/ui/button";
-import { Card, CardContent } from "@/registry/new-york/ui/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/registry/new-york/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Heart, MessageCircle, Repeat, Quote } from "lucide-react";
 import Link from "next/link";
 
 export default function NotificationsPage() {
-  const { isAuthenticated, loading: authLoading } = useAuth({ required: true });
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, isLoading: authLoading } = useCurrentUser();
+  const isAuthenticated = !!user;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [users, setUsers] = useState<Record<string, User>>({});
-  const [posts, setPosts] = useState<Record<string, Post>>({});
+  const [posts, setPosts] = useState<Record<string, Post | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +56,7 @@ export default function NotificationsPage() {
         setUsers(usersData);
 
         // Fetch posts data
-        const postsData: Record<string, Post> = {};
+        const postsData: Record<string, Post | null> = {};
         for (const postId of Array.from(postIds)) {
           try {
             const postData = await postApi.getPostById(postId);
@@ -84,10 +74,10 @@ export default function NotificationsPage() {
       }
     };
 
-    if (isAuthenticated && !authLoading && !userLoading && user) {
+    if (isAuthenticated && !authLoading && user) {
       fetchNotifications();
     }
-  }, [isAuthenticated, authLoading, userLoading, user]);
+  }, [isAuthenticated, authLoading, user]);
 
   const markAllAsRead = async () => {
     if (!user) return;
@@ -95,7 +85,7 @@ export default function NotificationsPage() {
     try {
       await notificationApi.markAllAsRead(user.id);
       setNotifications((prev) =>
-        prev.map((notification) => ({ ...notification, read: true })),
+        prev.map((notification) => ({ ...notification, read: true }))
       );
     } catch (err) {
       console.error("Error marking all notifications as read:", err);
@@ -128,28 +118,36 @@ export default function NotificationsPage() {
         return (
           <>
             liked your post:{" "}
-            <span className="text-muted-foreground">"{postPreview}"</span>
+            <span className="text-muted-foreground">
+              &quot;{postPreview}&quot;
+            </span>
           </>
         );
       case "reply":
         return (
           <>
             replied to your post:{" "}
-            <span className="text-muted-foreground">"{postPreview}"</span>
+            <span className="text-muted-foreground">
+              &quot;{postPreview}&quot;
+            </span>
           </>
         );
       case "retweet":
         return (
           <>
             retweeted your post:{" "}
-            <span className="text-muted-foreground">"{postPreview}"</span>
+            <span className="text-muted-foreground">
+              &quot;{postPreview}&quot;
+            </span>
           </>
         );
       case "quoteTweet":
         return (
           <>
             quoted your post:{" "}
-            <span className="text-muted-foreground">"{postPreview}"</span>
+            <span className="text-muted-foreground">
+              &quot;{postPreview}&quot;
+            </span>
           </>
         );
       default:
@@ -157,7 +155,7 @@ export default function NotificationsPage() {
     }
   };
 
-  if (loading || authLoading || userLoading) {
+  if (loading || authLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>

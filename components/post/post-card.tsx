@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import Image from "next/image";
 import { Post } from "@/lib/api-client";
 import { likesApi } from "@/lib/api-client";
 import { Icon } from "@/components/ui/icons";
@@ -76,11 +77,13 @@ export function PostCard({ post, currentUserId, onReply }: PostCardProps) {
         {/* User avatar */}
         <div className="flex-shrink-0">
           <Link href={`/profile/${post.user_id}`}>
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
-              <img
-                className="h-full w-full object-cover"
+            <div className="relative h-10 w-10 overflow-hidden rounded-full bg-muted">
+              <Image
+                className="object-cover"
                 src={post.users?.avatar_url || "/placeholder-avatar.png"}
                 alt={post.users?.display_name || "User"}
+                fill
+                sizes="40px"
               />
             </div>
           </Link>

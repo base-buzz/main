@@ -41,7 +41,6 @@ interface WalletSheetProps {
 
 // Constants for token addresses
 const BASE_ETH_ADDRESS = "0x4200000000000000000000000000000000000006";
-// eslint-disable-next-line turbo/no-undeclared-env-vars
 const BUZZ_ADDRESS = process.env.NEXT_PUBLIC_BUZZ_TOKEN_ADDRESS;
 const isBuzzTokenValid =
   BUZZ_ADDRESS?.startsWith("0x") && BUZZ_ADDRESS.length === 42;
@@ -85,7 +84,6 @@ export function WalletSheet({ open, onOpenChange }: WalletSheetProps) {
    */
   const getTokenPrice = async (tokenAddress: string) => {
     try {
-      // eslint-disable-next-line turbo/no-undeclared-env-vars
       const url = `${process.env.NEXT_PUBLIC_COINGECKO_BASE_TOKEN_API}?contract_addresses=${tokenAddress}&vs_currencies=usd`;
       const res = await fetch(url);
       const data = await res.json();

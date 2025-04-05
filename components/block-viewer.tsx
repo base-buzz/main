@@ -22,43 +22,41 @@ import { z } from "zod";
 import { trackEvent } from "@/lib/events";
 import { FileTree, createFileTreeForRegistryItemFiles } from "@/lib/registry";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
-import { V0Button } from "@/components/v0-button";
-import { Button } from "@/registry/new-york/ui/button";
+// Comment out V0Button import as the component itself is commented out
+// import { V0Button } from "@/components/v0-button";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/registry/new-york/ui/collapsible";
+} from "@/components/ui/collapsible";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/registry/new-york/ui/resizable";
-import { Separator } from "@/registry/new-york/ui/separator";
-import {
-  Sidebar,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarProvider,
-} from "@/registry/new-york/ui/sidebar";
-import { Tabs, TabsList, TabsTrigger } from "@/registry/new-york/ui/tabs";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/registry/new-york/ui/toggle-group";
-import { Style } from "@/registry/registry-styles";
+} from "@/components/ui/resizable";
+import { Separator } from "@/components/ui/separator";
+// Comment out Sidebar imports as the component files are missing
+// import {
+//   Sidebar,
+//   SidebarGroup,
+//   SidebarGroupContent,
+//   SidebarGroupLabel,
+//   SidebarMenu,
+//   SidebarMenuButton,
+//   SidebarMenuItem,
+//   SidebarMenuSub,
+//   SidebarProvider,
+// } from "@/components/ui/sidebar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type BlockViewerContext = {
   item: z.infer<typeof registryItemSchema>;
   view: "code" | "preview";
   setView: (view: "code" | "preview") => void;
-  style?: Style["name"];
-  setStyle: (style: Style["name"]) => void;
+  style?: string;
+  setStyle: (style: string) => void;
   activeFile: string | null;
   setActiveFile: (file: string) => void;
   resizablePanelRef: React.RefObject<ImperativePanelHandle> | null;
@@ -76,7 +74,7 @@ function useBlockViewer() {
   const context = React.useContext(BlockViewerContext);
   if (!context) {
     throw new Error(
-      "useBlockViewer must be used within a BlockViewerProvider.",
+      "useBlockViewer must be used within a BlockViewerProvider."
     );
   }
   return context;
@@ -167,7 +165,7 @@ function BlockViewerToolbar() {
           <ToggleGroup
             type="single"
             defaultValue="100"
-            onValueChange={(value) => {
+            onValueChange={(value: string) => {
               if (resizablePanelRef?.current) {
                 resizablePanelRef.current.resize(parseInt(value));
               }
@@ -224,11 +222,12 @@ function BlockViewerToolbar() {
           </Button>
         </div>
         <Separator orientation="vertical" className="mx-1 hidden h-4 xl:flex" />
-        <V0Button
+        {/* Comment out V0Button usage */}
+        {/* <V0Button
           className="hidden shadow-none sm:flex"
           id={`v0-button-${item.name}`}
           name={`${item.name}`}
-        />
+        /> */}
       </div>
     </div>
   );
@@ -291,7 +290,8 @@ function BlockViewerCode() {
   return (
     <div className="mr-[14px] flex overflow-hidden rounded-xl bg-zinc-950 text-white group-data-[view=preview]/block-view-wrapper:hidden md:h-[--height]">
       <div className="w-[280px]">
-        <BlockViewerFileTree />
+        {/* Ensure FileTree usage is commented out */}
+        {/* <BlockViewerFileTree /> */}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-12 items-center gap-2 border-b border-zinc-700 bg-zinc-900 px-4 text-sm font-medium">
@@ -312,92 +312,94 @@ function BlockViewerCode() {
   );
 }
 
-export function BlockViewerFileTree() {
-  const { tree } = useBlockViewer();
+// Ensure BlockViewerFileTree component definition is commented out
+// export function BlockViewerFileTree() {
+//   const { tree } = useBlockViewer();
+//
+//   if (!tree) {
+//     return null;
+//   }
+//
+//   return (
+//     <SidebarProvider className="flex !min-h-full flex-col">
+//       <Sidebar
+//         collapsible="none"
+//         className="w-full flex-1 border-r border-zinc-700 bg-zinc-900 text-white"
+//       >
+//         <SidebarGroupLabel className="h-12 rounded-none border-b border-zinc-700 px-4 text-sm text-white">
+//           Files
+//         </SidebarGroupLabel>
+//         <SidebarGroup className="p-0">
+//           <SidebarGroupContent>
+//             <SidebarMenu className="gap-1.5">
+//               {tree.map((file, index) => (
+//                 <Tree key={index} item={file} index={1} />
+//               ))}
+//             </SidebarMenu>
+//           </SidebarGroupContent>
+//         </SidebarGroup>
+//       </Sidebar>
+//     </SidebarProvider>
+//   );
+// }
 
-  if (!tree) {
-    return null;
-  }
-
-  return (
-    <SidebarProvider className="flex !min-h-full flex-col">
-      <Sidebar
-        collapsible="none"
-        className="w-full flex-1 border-r border-zinc-700 bg-zinc-900 text-white"
-      >
-        <SidebarGroupLabel className="h-12 rounded-none border-b border-zinc-700 px-4 text-sm text-white">
-          Files
-        </SidebarGroupLabel>
-        <SidebarGroup className="p-0">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1.5">
-              {tree.map((file, index) => (
-                <Tree key={index} item={file} index={1} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </Sidebar>
-    </SidebarProvider>
-  );
-}
-
-function Tree({ item, index }: { item: FileTree; index: number }) {
-  const { activeFile, setActiveFile } = useBlockViewer();
-
-  if (!item.children) {
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          isActive={item.path === activeFile}
-          onClick={() => item.path && setActiveFile(item.path)}
-          className="whitespace-nowrap rounded-none pl-[--index] hover:bg-zinc-700 hover:text-white focus:bg-zinc-700 focus:text-white focus-visible:bg-zinc-700 focus-visible:text-white active:bg-zinc-700 active:text-white data-[active=true]:bg-zinc-700 data-[active=true]:text-white"
-          data-index={index}
-          style={
-            {
-              "--index": `${index * (index === 2 ? 1.2 : 1.3)}rem`,
-            } as React.CSSProperties
-          }
-        >
-          <ChevronRight className="invisible" />
-          <File className="h-4 w-4" />
-          {item.name}
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  }
-
-  return (
-    <SidebarMenuItem>
-      <Collapsible
-        className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
-        defaultOpen
-      >
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton
-            className="whitespace-nowrap rounded-none pl-[--index] hover:bg-zinc-700 hover:text-white focus-visible:bg-zinc-700 focus-visible:text-white active:bg-zinc-700 active:text-white data-[active=true]:bg-zinc-700 data-[active=true]:text-white data-[state=open]:hover:bg-zinc-700 data-[state=open]:hover:text-white"
-            style={
-              {
-                "--index": `${index * (index === 1 ? 1 : 1.2)}rem`,
-              } as React.CSSProperties
-            }
-          >
-            <ChevronRight className="h-4 w-4 transition-transform" />
-            <Folder className="h-4 w-4" />
-            {item.name}
-          </SidebarMenuButton>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <SidebarMenuSub className="m-0 w-full border-none p-0">
-            {item.children.map((subItem, key) => (
-              <Tree key={key} item={subItem} index={index + 1} />
-            ))}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </Collapsible>
-    </SidebarMenuItem>
-  );
-}
+// Ensure Tree component definition is commented out
+// function Tree({ item, index }: { item: FileTree; index: number }) {
+//   const { activeFile, setActiveFile } = useBlockViewer();
+//
+//   if (!item.children) {
+//     return (
+//       <SidebarMenuItem>
+//         <SidebarMenuButton
+//           isActive={item.path === activeFile}
+//           onClick={() => item.path && setActiveFile(item.path)}
+//           className="whitespace-nowrap rounded-none pl-[--index] hover:bg-zinc-700 hover:text-white focus:bg-zinc-700 focus:text-white focus-visible:bg-zinc-700 focus-visible:text-white active:bg-zinc-700 active:text-white data-[active=true]:bg-zinc-700 data-[active=true]:text-white"
+//           data-index={index}
+//           style={
+//             {
+//               "--index": `${index * (index === 2 ? 1.2 : 1.3)}rem`,
+//             } as React.CSSProperties
+//           }
+//         >
+//           <ChevronRight className="invisible" />
+//           <File className="h-4 w-4" />
+//           {item.name}
+//         </SidebarMenuButton>
+//       </SidebarMenuItem>
+//     );
+//   }
+//
+//   return (
+//     <SidebarMenuItem>
+//       <Collapsible
+//         className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
+//         defaultOpen
+//       >
+//         <CollapsibleTrigger asChild>
+//           <SidebarMenuButton
+//             className="whitespace-nowrap rounded-none pl-[--index] hover:bg-zinc-700 hover:text-white focus-visible:bg-zinc-700 focus-visible:text-white active:bg-zinc-700 active:text-white data-[active=true]:bg-zinc-700 data-[active=true]:text-white data-[state=open]:hover:bg-zinc-700 data-[state=open]:hover:text-white"
+//             style={
+//               {
+//                 "--index": `${index * (index === 1 ? 1 : 1.2)}rem`,
+//               } as React.CSSProperties
+//             }
+//           >
+//             <ChevronRight className="h-4 w-4 transition-transform" />
+//             <Folder className="h-4 w-4" />
+//             {item.name}
+//           </SidebarMenuButton>
+//         </CollapsibleTrigger>
+//         <CollapsibleContent>
+//           <SidebarMenuSub className="m-0 w-full border-none p-0">
+//             {item.children.map((subItem, key) => (
+//               <Tree key={key} item={subItem} index={index + 1} />
+//             ))}
+//           </SidebarMenuSub>
+//         </CollapsibleContent>
+//       </Collapsible>
+//     </SidebarMenuItem>
+//   );
+// }
 
 function BlockCopyCodeButton() {
   const { activeFile, item } = useBlockViewer();

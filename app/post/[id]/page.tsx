@@ -2,30 +2,31 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
+import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { postApi } from "@/lib/api";
 import { Post } from "@/types/interfaces";
 import PostComponent from "@/components/post/PostComponent";
-import Link from "next/link";
-import { Button } from "@/registry/new-york/ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import CreatePostForm from "@/components/post/CreatePostForm";
 import { Icon } from "@/components/ui/icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function PostPage() {
   const params = useParams();
   const postId = params?.id as string;
-  const { isAuthenticated, loading: authLoading } = useAuth();
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
+  const isAuthenticated = !!user;
   const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        setLoading(true);
+        setPageLoading(true);
         setError(null);
         // In a real app, we would fetch the specific post from the API
         // For now, we'll get all posts and find the one with matching ID
@@ -41,11 +42,13 @@ export default function PostPage() {
         console.error("Error fetching post:", err);
         setError("Failed to load post");
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
 
-    fetchPost();
+    if (postId) {
+      fetchPost();
+    }
   }, [postId]);
 
   const handleReplyCreated = (newReply: Post) => {
@@ -58,12 +61,8 @@ export default function PostPage() {
     }
   };
 
-  if (loading || authLoading || userLoading) {
-    return (
-      <div className="flex h-full items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  if (isLoading || pageLoading) {
+    return <LoadingSpinner />;
   }
 
   if (error || !post) {
@@ -102,11 +101,13 @@ export default function PostPage() {
       {user && isAuthenticated && (
         <div className="p-4">
           <div className="flex gap-3">
-            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
-              <img
-                src="https://i.pravatar.cc/150?img=3"
-                alt={user.alias || "User"}
-                className="h-full w-full object-cover"
+            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+              <Image
+                src={user.avatar_url || "https://i.pravatar.cc/150?img=3"}
+                alt={user.display_name || "User Avatar"}
+                fill
+                className="object-cover"
+                sizes="40px"
               />
             </div>
             <div className="w-full">

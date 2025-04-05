@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -132,15 +133,23 @@ export default function DesktopNavigation({
         href="/home"
         className="flex h-14 w-14 items-center justify-center rounded-full hover:bg-accent/10"
       >
-        <img src="/logo.svg" alt="BaseBuzz" className="h-8 w-8 dark:invert" />
+        <Image
+          src="/logo.svg"
+          alt="BaseBuzz"
+          width={32}
+          height={32}
+          className="dark:invert"
+        />
       </Link>
 
       {/* Scrollable Navigation Items */}
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-1">
           {NAV_ITEMS.map((item) => {
+            const currentPath = pathname || "/home";
             const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+              currentPath === item.href ||
+              currentPath.startsWith(item.href + "/");
             const Icon = isActive ? item.activeIcon : item.icon;
 
             if (item.requiresAuth && !isConnected) {
@@ -214,11 +223,13 @@ export default function DesktopNavigation({
               onClick={() => isConnected && setIsEditProfileOpen(true)}
               className="flex w-full items-center gap-3 rounded-full p-3 transition-all duration-200 ease-in-out hover:bg-muted hover:shadow-sm dark:hover:bg-gray-800"
             >
-              <div className="h-10 w-10 overflow-hidden rounded-full bg-accent">
-                <img
+              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-accent">
+                <Image
                   src={user?.avatar_url || "/default-avatar.png"}
                   alt={user?.display_name || "Profile"}
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="40px"
                 />
               </div>
               <div className="flex-1 text-left">

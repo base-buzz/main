@@ -7,10 +7,12 @@ import React, {
   useCallback,
 } from "react";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
-import { useAccount, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 import { supabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { User } from "@/types/interfaces";
+import { SiweMessage } from "siwe";
+import { useRouter, usePathname } from "next/navigation";
 
 // Define types for our auth context
 interface AuthContextType {
@@ -25,6 +27,11 @@ interface AuthContextType {
   walletAddress: string | null;
   isWalletConnected: boolean;
 
+  // SIWE state
+  isSiweVerified: boolean;
+  isVerifyingSiwe: boolean;
+  siweError: Error | null;
+
   // Authentication methods
   signUpWithEmail: (email: string, password: string) => Promise<any>;
   signInWithEmail: (email: string, password: string) => Promise<any>;
@@ -33,6 +40,7 @@ interface AuthContextType {
   unlinkWallet: (address: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (updatedFields: Partial<User>) => Promise<void>;
+  ensureSiweVerified: () => Promise<boolean>;
 
   // Wallet methods
   getLinkedWallets: () => Promise<string[]>;
@@ -54,9 +62,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [profileError, setProfileError] = useState<Error | null>(null);
 
+  // SIWE State
+  const [isSiweVerified, setIsSiweVerified] = useState<boolean>(false);
+  const [isVerifyingSiwe, setIsVerifyingSiwe] = useState<boolean>(false);
+  const [siweError, setSiweError] = useState<Error | null>(null);
+
   // Get wallet state from wagmi
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Reset SIWE verification state if wallet disconnects
+  useEffect(() => {
+    // Only reset SIWE state if wallet is not connected
+    if (!isConnected) {
+      console.log("Wallet disconnected, resetting SIWE state."); // Add log
+      setIsSiweVerified(false);
+      setSiweError(null);
+    }
+    // Remove the unconditional reset and address dependency
+  }, [isConnected]); // Only depend on isConnected
 
   // Restore profile fetching function
   const fetchAndSetUserProfile = useCallback(
@@ -121,6 +148,139 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
     // Restore fetchAndSetUserProfile to dependencies
   }, [fetchAndSetUserProfile]);
+
+  // --- SIWE Logic ---
+  const ensureSiweVerified = useCallback(async (): Promise<boolean> => {
+    // Define redirect logic once
+    const performRedirectIfNeeded = () => {
+      if (pathname === "/") {
+        console.log("Authenticated on root, redirecting to /home...");
+        router.push("/home");
+      }
+    };
+
+    // 0. Check if a valid server-side session already exists
+    try {
+      const sessionCheckRes = await fetch("/api/auth/user");
+      if (sessionCheckRes.ok) {
+        console.log(
+          "Existing valid SIWE session found via /api/auth/user check."
+        );
+        const userData = await sessionCheckRes.json();
+        setIsSiweVerified(true);
+        setUser(userData);
+        performRedirectIfNeeded(); // Redirect if needed after finding session
+        return true;
+      }
+      console.log(
+        "/api/auth/user check failed or returned non-ok status, proceeding with SIWE."
+      );
+    } catch (sessionError) {
+      console.error(
+        "Error checking existing session with /api/auth/user:",
+        sessionError
+      );
+    }
+
+    // 1. Check client state / connection status
+    if (isSiweVerified) {
+      console.log("SIWE already verified (client state). Skipping flow.");
+      return true;
+    }
+    if (!isConnected || !address || !chainId) {
+      toast.error("Wallet not connected or chainId missing for SIWE.");
+      return false;
+    }
+
+    // Avoid concurrent verification attempts
+    if (isVerifyingSiwe) {
+      console.log("SIWE verification already in progress. Skipping.");
+      return false; // Return false, don't indicate success yet
+    }
+
+    setIsVerifyingSiwe(true);
+    setSiweError(null);
+    console.log("Starting SIWE verification...");
+
+    try {
+      // 2. Fetch nonce from backend
+      console.log("Fetching SIWE nonce...");
+      const nonceRes = await fetch("/api/auth/siwe/nonce");
+      if (!nonceRes.ok) throw new Error("Failed to fetch nonce");
+      const { nonce } = await nonceRes.json();
+      if (!nonce) throw new Error("Invalid nonce received");
+
+      // 3. Create SIWE message
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: "Sign in with Ethereum to BaseBuzz.",
+        uri: window.location.origin,
+        version: "1",
+        chainId,
+        nonce,
+      });
+      const messageToSign = message.prepareMessage();
+
+      // 4. Request signature from user
+      console.log("Requesting signature...");
+      const signature = await signMessageAsync({ message: messageToSign });
+
+      // 5. Verify signature with backend
+      console.log("Verifying signature...");
+      const verifyRes = await fetch("/api/auth/siwe/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageToSign, signature }),
+      });
+
+      if (!verifyRes.ok) {
+        const errorData = await verifyRes.json();
+        throw new Error(errorData.error || "SIWE verification failed");
+      }
+
+      // 6. On success, update state
+      console.log("SIWE verification successful!");
+      setIsSiweVerified(true);
+      fetchAndSetUserProfile(undefined);
+      performRedirectIfNeeded(); // Redirect if needed after completing SIWE
+
+      return true;
+    } catch (error: any) {
+      console.error("SIWE Error:", error);
+      setSiweError(error);
+      toast.error(error.message || "Sign-in verification failed.");
+      setIsSiweVerified(false);
+      return false;
+    } finally {
+      setIsVerifyingSiwe(false);
+    }
+  }, [
+    isSiweVerified,
+    isConnected,
+    address,
+    chainId,
+    signMessageAsync,
+    fetchAndSetUserProfile,
+    router,
+    pathname,
+  ]);
+
+  // Automatically trigger SIWE verification when wallet connects
+  useEffect(() => {
+    if (isConnected && address && !isSiweVerified && !isVerifyingSiwe) {
+      console.log(
+        "Wallet connected, triggering ensureSiweVerified automatically..."
+      );
+      ensureSiweVerified();
+    }
+  }, [
+    isConnected,
+    address,
+    isSiweVerified,
+    isVerifyingSiwe,
+    ensureSiweVerified,
+  ]);
 
   // Sign up with email/password
   const signUpWithEmail = async (email: string, password: string) => {
@@ -298,12 +458,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Restore real user, error, and update function
     user,
     session,
-    isLoading,
-    // Use isConnected from useAccount() scope
-    isAuthenticated: isConnected && !!user,
+    isLoading: isLoading || isVerifyingSiwe, // Consider SIWE verification as loading
+    isAuthenticated: (isConnected && !!user) || isSiweVerified, // Auth if profile exists OR SIWE verified
     profileError,
     walletAddress: address ?? null,
     isWalletConnected: isConnected,
+    isSiweVerified,
+    isVerifyingSiwe,
+    siweError,
+    ensureSiweVerified,
     signUpWithEmail,
     signInWithEmail,
     connectWallet,

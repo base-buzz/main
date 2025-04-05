@@ -47,7 +47,7 @@ export default function WalletProfileSheet({
   const walletAddress = address || connectedAddress;
   const formattedAddress = walletAddress
     ? `${walletAddress.substring(0, 4)}...${walletAddress.substring(
-        walletAddress.length - 4,
+        walletAddress.length - 4
       )}`
     : "";
 
@@ -61,7 +61,7 @@ export default function WalletProfileSheet({
 
   const handleDisconnect = () => {
     disconnect();
-    router.push("/"); // Redirect to home page after disconnect
+    // router.push("/"); // Remove explicit redirect on disconnect
   };
 
   // Mock data for the wallet profile

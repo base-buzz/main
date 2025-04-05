@@ -52,7 +52,7 @@ export function getCommonHeaders() {
  */
 export async function apiFetch<T = any>(
   url: string,
-  options: RequestInit = {},
+  options: RequestInit = {}
 ): Promise<T> {
   try {
     // Ensure headers are set
@@ -187,11 +187,11 @@ export const postApi = {
   getPostReplies: async (
     postId: string,
     page = 0,
-    limit = 10,
+    limit = 10
   ): Promise<Post[]> => {
     try {
       const response = await fetch(
-        `${API_URL}/posts/${postId}/replies?limit=${limit}&page=${page}`,
+        `${API_URL}/posts/${postId}/replies?limit=${limit}&page=${page}`
       );
       const data = await handleResponse(response);
 
@@ -269,13 +269,34 @@ export const postApi = {
   },
 
   // Create a new post
-  async createPost(content: string, mediaUrls: string[] = []): Promise<Post> {
+  async createPost(
+    userId: string,
+    content: string,
+    mediaUrls?: string[],
+    replyToId?: string,
+    quoteTweetId?: string
+  ): Promise<Post> {
     try {
       console.log("📝 Creating new post...");
 
+      // Construct body with all relevant fields
+      const body: Record<string, any> = {
+        user_id: userId, // Map to user_id expected by backend
+        content,
+      };
+      if (mediaUrls && mediaUrls.length > 0) {
+        body.mediaUrls = mediaUrls;
+      }
+      if (replyToId) {
+        body.reply_to_id = replyToId; // Map to reply_to_id
+      }
+      if (quoteTweetId) {
+        body.quote_tweet_id = quoteTweetId; // Map to quote_tweet_id
+      }
+
       const newPost = await apiFetch<Post>("/api/posts", {
         method: "POST",
-        body: JSON.stringify({ content, mediaUrls }),
+        body: JSON.stringify(body), // Send the constructed body
       });
 
       console.log("✅ Post created successfully");
@@ -361,7 +382,7 @@ export const postApi = {
   // Unretweet a post
   unretweetPost: async (
     postId: string,
-    userId: string,
+    userId: string
   ): Promise<{ message: string }> => {
     const response = await fetch(`${API_URL}/posts/retweet`, {
       method: "POST",
@@ -378,7 +399,7 @@ export const postApi = {
     postId: string,
     userId: string,
     content: string,
-    media?: string[],
+    media?: string[]
   ): Promise<{ message: string; comment: Post }> => {
     const response = await fetch(`${API_URL}/posts/reply`, {
       method: "POST",
@@ -395,7 +416,7 @@ export const postApi = {
     postId: string,
     userId: string,
     content: string,
-    media?: string[],
+    media?: string[]
   ): Promise<{ message: string; post: Post }> => {
     const response = await fetch(`${API_URL}/posts/quote`, {
       method: "POST",
@@ -411,7 +432,7 @@ export const postApi = {
   getUserPosts: async (userId: string): Promise<Post[]> => {
     try {
       const response = await fetch(
-        `${API_URL}/users/${userId}/posts?limit=20&page=0`,
+        `${API_URL}/users/${userId}/posts?limit=20&page=0`
       );
       const data = await handleResponse(response);
 
@@ -464,10 +485,10 @@ export const dmApi = {
   // Get conversation between two users
   getConversation: async (
     senderId: string,
-    receiverId: string,
+    receiverId: string
   ): Promise<DirectMessage[]> => {
     const response = await fetch(
-      `${API_URL}/dms?senderId=${senderId}&receiverId=${receiverId}`,
+      `${API_URL}/dms?senderId=${senderId}&receiverId=${receiverId}`
     );
     return handleResponse(response);
   },
@@ -566,7 +587,7 @@ export const listingApi = {
 
   // Get listings by category
   getListingsByCategory: async (
-    category: "meme" | "project",
+    category: "meme" | "project"
   ): Promise<Listing[]> => {
     const response = await fetch(`${API_URL}/listings?category=${category}`);
     return handleResponse(response);

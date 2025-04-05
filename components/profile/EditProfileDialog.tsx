@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Camera, X } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface EditProfileDialogProps {
   isOpen: boolean;
@@ -156,10 +157,12 @@ export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
         {/* Header Image */}
         <div className="relative h-[200px] w-full overflow-hidden bg-accent">
           {formData.header_url && (
-            <img
+            <Image
               src={formData.header_url}
               alt="Header"
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 600px"
             />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
@@ -180,12 +183,14 @@ export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
 
         {/* Avatar */}
         <div className="relative -mt-[72px] ml-4">
-          <div className="h-[134px] w-[134px] overflow-hidden rounded-full border-4 border-background bg-accent">
+          <div className="relative h-[134px] w-[134px] overflow-hidden rounded-full border-4 border-background bg-accent">
             {formData.avatar_url ? (
-              <img
+              <Image
                 src={formData.avatar_url}
                 alt="Avatar"
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="134px"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Icon } from "@/components/ui/icons";
@@ -51,7 +52,9 @@ export default function MobileHeader() {
 
   // Update active tab based on pathname
   useEffect(() => {
-    const matchingTab = currentTabs.find((tab) => pathname === tab.path);
+    // Add null check/default value
+    const currentPath = pathname || "/home";
+    const matchingTab = currentTabs.find((tab) => currentPath === tab.path);
     if (matchingTab) {
       setActiveTab(matchingTab.id);
     } else {
@@ -66,7 +69,9 @@ export default function MobileHeader() {
   };
 
   // Don't render on landing page
-  if (pathname === "/") return null;
+  // Add null check/default value
+  const currentPathForRenderCheck = pathname || "/home";
+  if (currentPathForRenderCheck === "/") return null;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -78,7 +83,13 @@ export default function MobileHeader() {
         <div className="absolute left-1/2 -translate-x-1/2">
           <Link href="/home" className="flex items-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary p-2">
-              <img src="/black.svg" alt="BaseBuzz" className="h-5 w-5 invert" />
+              <Image
+                src="/black.svg"
+                alt="BaseBuzz"
+                width={20}
+                height={20}
+                className="invert"
+              />
             </div>
           </Link>
         </div>
@@ -106,7 +117,7 @@ export default function MobileHeader() {
       <WalletSheet open={isWalletSheetOpen} onOpenChange={closeWalletSheet} />
 
       {/* Show tabs for home routes */}
-      {pathname.startsWith("/home") && <HomeTabs />}
+      {(pathname || "/home").startsWith("/home") && <HomeTabs />}
     </header>
   );
 }

@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Image, Smile, X, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { postApi } from "@/lib/api";
 import { Post } from "@/types/interfaces";
-import { Button } from "@/registry/new-york/ui/button";
-import { Card } from "@/registry/new-york/ui/card";
-import { Textarea } from "@/registry/new-york/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import NextImage from "next/image";
 
 interface CreatePostFormProps {
   userId: string;
@@ -58,7 +59,7 @@ export default function CreatePostForm({
         content,
         media.length > 0 ? media : undefined,
         replyToId, // Pass as parentId
-        quoteTweetId, // Pass as quotedPostId
+        quoteTweetId // Pass as quotedPostId
       );
 
       // Reset form
@@ -103,17 +104,22 @@ export default function CreatePostForm({
             className={`mt-2 grid gap-2 ${media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
           >
             {media.map((url, index) => (
-              <div key={index} className="relative">
-                <img
+              <div
+                key={index}
+                className="relative aspect-video overflow-hidden rounded-lg"
+              >
+                <NextImage
                   src={url}
-                  alt={`Upload ${index + 1}`}
-                  className="max-h-[200px] w-full rounded-lg object-cover"
+                  alt={`Upload preview ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
                 <Button
                   type="button"
                   variant="secondary"
                   size="icon"
-                  className="absolute right-2 top-2 h-6 w-6 rounded-full bg-background/80 p-1"
+                  className="absolute right-2 top-2 z-10 h-6 w-6 rounded-full bg-background/80 p-1"
                   onClick={() => handleRemoveMedia(index)}
                 >
                   <X className="h-4 w-4" />
@@ -150,6 +156,7 @@ export default function CreatePostForm({
               }
               className="rounded-full text-primary"
             >
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
               <Image className="h-5 w-5" />
             </Button>
             <Button
