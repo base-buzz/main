@@ -1,0 +1,18 @@
+<svg width="230" height="230" viewBox="0 0 230 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_4_211)">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M230 115C230 178.513 178.513 230 115 230C51.4873 230 0 178.513 0 115C0 51.4873 51.4873 0 115 0C178.513 0 230 51.4873 230 115ZM196.214 114.35C196.214 158.845 160.082 194.915 115.509 194.915C73.2211 194.915 38.5299 162.448 35.0845 121.122V114V107.578C38.5299 66.2522 73.2211 33.7852 115.509 33.7852C160.082 33.7852 196.214 69.8553 196.214 114.35Z" fill="#0052FF"/>
+<line x1="30" y1="113" x2="86" y2="113" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<line x1="86.6592" y1="112.85" x2="89.8502" y2="104.341" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<line x1="110.091" y1="178.188" x2="90.1883" y2="104.909" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<line x1="110.273" y1="177.745" x2="117.745" y2="64.7274" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<line x1="137.06" y1="131.244" x2="118.244" y2="64.9401" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<line x1="137.628" y1="130.512" x2="148.512" y2="112.372" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<path d="M163.016 148.5L149.5 112.5" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+<path d="M163.016 148.5L174 97" stroke="#0052FF" stroke-width="8" stroke-linecap="round"/>
+</g>
+<defs>
+<clipPath id="clip0_4_211">
+<rect width="230" height="230" fill="white"/>
+</clipPath>
+</defs>
+</svg>
