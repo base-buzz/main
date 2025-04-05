@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSuggestedUsers } from "@/services/users.service";
 
+export const dynamic = "force-dynamic";
+
 // GET: Retrieve suggested users for the "Who to follow" feature
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { error: "Missing userId parameter" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.error("Error retrieving suggested users:", error);
     return NextResponse.json(
       { error: "Failed to retrieve suggested users" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
