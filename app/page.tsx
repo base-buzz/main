@@ -5,20 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAccount } from "wagmi"; // Import useAccount
 import NotLoggedInLayout from "@/components/layout/auth/NotLoggedInLayout";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-
-// Basic component for the unauthenticated view
-const UnauthenticatedHomeView = () => {
-  return (
-    <div className="flex h-screen flex-col items-center justify-center bg-background">
-      <h1 className="mb-6 text-4xl font-bold">Welcome to Base Buzz</h1>
-      <p className="mb-8 text-lg text-muted-foreground">
-        Connect your wallet to get started.
-      </p>
-      <ConnectButton />
-    </div>
-  );
-};
 
 export default function RootPage() {
   const { data: session, status } = useSession();
@@ -54,12 +40,13 @@ export default function RootPage() {
     );
   }
 
-  // If determined to stay on this page (not redirecting), show the connect view
+  // If user is unauthenticated and wallet is NOT connected, show the NotLoggedInLayout
   if (status === "unauthenticated" && !isConnected) {
-    return <UnauthenticatedHomeView />;
+    return <NotLoggedInLayout />;
   }
 
   // Fallback: Render loading state while redirecting or if in an unexpected state
+  // This case should ideally not be reached if redirects work correctly
   return (
     <div className="flex h-screen items-center justify-center">Loading...</div>
   );
