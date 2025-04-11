@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ComposeBox } from "@/components/home/ComposeBox";
 import { ShowPostsCount } from "@/components/home/ShowPostsCount";
@@ -25,38 +25,40 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Function to fetch posts
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        console.log("🔐 Auth status:", {
-          isWalletConnected,
-          isAuthenticated,
-        });
+      console.log("🔐 Auth status:", {
+        isWalletConnected,
+        isAuthenticated,
+      });
 
-        if (isAuthenticated) {
-          console.log(`📊 Fetching posts with auth...`);
-          const fetchedPosts = await postApi.getPosts();
+      if (isAuthenticated) {
+        console.log(`📊 Fetching posts with auth...`);
+        const fetchedPosts = await postApi.getPosts();
 
-          console.log(`📝 Received ${fetchedPosts.length} posts`);
-          setPosts(fetchedPosts);
-        } else {
-          console.log("⚠️ Not authenticated, skipping post fetch");
-          setPosts([]);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching posts:", err);
-        setError("Failed to fetch posts");
+        console.log(`📝 Received ${fetchedPosts.length} posts`);
+        setPosts(fetchedPosts);
+      } else {
+        console.log("⚠️ Not authenticated, skipping post fetch");
         setPosts([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchPosts();
+    } catch (err) {
+      console.error("❌ Error fetching posts:", err);
+      setError("Failed to fetch posts");
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   }, [isAuthenticated, isWalletConnected]);
+
+  // Fetch posts on initial load and when auth status changes
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   useEffect(() => {
     if (status === "authenticated" && session?.user?.handle) {
@@ -69,10 +71,11 @@ export default function HomePage() {
   }, [status, session, router]);
 
   const handlePostCreated = (newPost: Post) => {
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
+    console.log("✅ Post created, triggering refetch...");
+    fetchPosts();
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || loading || userLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         Loading...

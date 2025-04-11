@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPost, getTrendingPosts } from "@/services/posts.service";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getServerSession } from "next-auth/next"; // Import NextAuth session helper
-import { authOptions } from "../auth/[...nextauth]/route"; // Import authOptions
+import { authOptions } from "@/lib/authOptions"; // CORRECTED Import authOptions
 import { User } from "@/types/interfaces"; // Assuming User type is defined
 
 // GET: Get trending posts
@@ -206,15 +206,47 @@ export async function POST(request: NextRequest) {
       );
     }
     console.log(
-      `📝 [POST /api/posts] Creating post for user ${userIdFromSession}: Content='${content}'`
+      `📝 [POST /api/posts] Preparing to create post for user address ${userIdFromSession}: Content='${content}'`
     );
 
-    // 4. Insert the new post using the SERVICE ROLE client
-    // We use service role for inserts to bypass potential RLS issues on creation
+    // --- Add step to fetch User UUID from Address ---
+    console.log(
+      `ℹ️ [POST /api/posts] Fetching user UUID for address: ${userIdFromSession}`
+    );
+    const { data: userData, error: userError } = await supabaseServer
+      .from("users")
+      .select("id")
+      .eq("address", userIdFromSession.toLowerCase()) // Ensure case-insensitivity
+      .single();
+
+    if (userError || !userData) {
+      console.error(
+        `❌ [POST /api/posts] Error fetching user UUID for address ${userIdFromSession}:`,
+        userError
+      );
+      return NextResponse.json(
+        {
+          error: "Failed to find user profile for the authenticated address.",
+          details: userError?.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    const userUuid = userData.id;
+    console.log(
+      `👤 [POST /api/posts] Found user UUID: ${userUuid} for address: ${userIdFromSession}`
+    );
+    // --- End fetch User UUID ---
+
+    // 4. Insert the new post using the SERVICE ROLE client with the User's UUID
+    console.log(
+      `📝 [POST /api/posts] Inserting post for user UUID ${userUuid}: Content='${content}'`
+    );
     const { data: newPostData, error: insertError } = await supabaseServer
       .from("posts")
       .insert({
-        user_id: userIdFromSession,
+        user_id: userUuid, // Use the fetched UUID
         content: content,
         media_urls: media || [],
       })
