@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,9 @@ interface EditProfileDialogProps {
 
 export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
   const { user, updateUserProfile } = useCurrentUser();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [formData, setFormData] = useState({
     display_name: "",
     bio: "",
@@ -33,7 +36,7 @@ export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
   });
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (user && isOpen && !hasInitialized) {
       setFormData({
         display_name: user.display_name || "",
         bio: user.bio || "",
@@ -41,8 +44,13 @@ export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
         avatar_url: user.avatar_url || "",
         header_url: user.header_url || "",
       });
+      setHasInitialized(true);
     }
-  }, [user, isOpen]);
+
+    if (!isOpen) {
+      setHasInitialized(false);
+    }
+  }, [user, isOpen, hasInitialized]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -53,6 +61,18 @@ export function EditProfileDialog({ isOpen, onClose }: EditProfileDialogProps) {
 
   const handleImageUpload = async (file: File, type: "avatar" | "header") => {
     const uploadToast = toast.loading(`Uploading ${type}...`);
+
+    if (status !== "authenticated" || !session?.user?.address) {
+      console.error("Attempted image upload without authenticated session.", {
+        status,
+        sessionAddress: session?.user?.address,
+      });
+      toast.error("Authentication required. Please sign in again.", {
+        id: uploadToast,
+      });
+      return;
+    }
+
     try {
       const body = new FormData();
       body.append("file", file);

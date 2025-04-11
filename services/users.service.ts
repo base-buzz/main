@@ -59,6 +59,33 @@ export async function getUserByAddress(address: string): Promise<User | null> {
   }
 }
 
+// Get a user by handle
+export async function getUserByHandle(handle: string): Promise<User | null> {
+  try {
+    const { data, error } = await supabaseServer
+      .from("users")
+      .select(
+        "id, address, display_name, avatar_url, bio, email, tier, buzz_balance, ens_name, location, header_url, created_at, updated_at, handle"
+      )
+      .eq("handle", handle)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Database error fetching user by handle:", handle, error);
+      throw error;
+    }
+
+    // Cast the result to the User type from interfaces.ts
+    return data as User | null; // Returns null if user not found (PGRST116)
+  } catch (error) {
+    // Log other unexpected errors
+    if ((error as any)?.code !== "PGRST116") {
+      console.error("Unexpected error getting user by handle:", handle, error);
+    }
+    return null;
+  }
+}
+
 // Get a user's stats
 export async function getUserStats(userId: string): Promise<UserStats | null> {
   try {
@@ -96,7 +123,7 @@ export async function createUser(user: UserInsert): Promise<User | null> {
 // Update an existing user
 export async function updateUser(
   id: string,
-  updates: UserUpdate,
+  updates: UserUpdate
 ): Promise<User | null> {
   try {
     const { data, error } = await supabaseServer
@@ -118,7 +145,7 @@ export async function updateUser(
 export async function getUserFollowing(
   userId: string,
   limit = 10,
-  page = 0,
+  page = 0
 ): Promise<User[]> {
   try {
     const { data, error } = await supabaseServer
@@ -140,7 +167,7 @@ export async function getUserFollowing(
 export async function getUserFollowers(
   userId: string,
   limit = 10,
-  page = 0,
+  page = 0
 ): Promise<User[]> {
   try {
     const { data, error } = await supabaseServer
@@ -161,7 +188,7 @@ export async function getUserFollowers(
 // Check if a user follows another user
 export async function checkIfFollowing(
   followerId: string,
-  followingId: string,
+  followingId: string
 ): Promise<boolean> {
   try {
     const { data, error } = await supabaseServer
@@ -195,7 +222,7 @@ export async function getUserAchievements(userId: string): Promise<any[]> {
           icon_url,
           tier
         )
-      `,
+      `
       )
       .eq("user_id", userId);
 
@@ -210,7 +237,7 @@ export async function getUserAchievements(userId: string): Promise<any[]> {
 // Get suggested users to follow (based on popularity, exclude already followed)
 export async function getSuggestedUsers(
   userId: string,
-  limit = 5,
+  limit = 5
 ): Promise<User[]> {
   try {
     // Get IDs of users the current user already follows
@@ -246,7 +273,7 @@ export async function getSuggestedUsers(
 export async function searchUsers(
   query: string,
   limit = 20,
-  page = 0,
+  page = 0
 ): Promise<User[]> {
   try {
     const { data, error } = await supabaseServer

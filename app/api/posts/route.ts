@@ -11,100 +11,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPost, getTrendingPosts } from "@/services/posts.service";
 import { supabaseServer } from "@/lib/supabase/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { getIronSession } from "iron-session";
-import { sessionOptions, SessionData } from "@/lib/session"; // Import session types/options
+import { getServerSession } from "next-auth/next"; // Import NextAuth session helper
+import { authOptions } from "../auth/[...nextauth]/route"; // Import authOptions
 import { User } from "@/types/interfaces"; // Assuming User type is defined
-
-// Type for custom wallet session
-interface CustomWalletSession {
-  user_id: string;
-  wallet_address: string;
-  created_at: string;
-}
 
 // GET: Get trending posts
 export async function GET(request: NextRequest) {
   try {
-    // Keep using createRouteHandlerClient for session check initially if needed
-    // const supabase = createRouteHandlerClient({ cookies });
-    const cookieStore = cookies();
-
     console.log("🔍 [GET /api/posts] Starting posts fetch...");
 
-    // --- Add detailed logging around Iron Session ---
-    let rawCookieValue: string | undefined | null = null;
-    try {
-      const cookieHeader = request.headers.get("cookie");
-      if (cookieHeader) {
-        const cookiesManual = cookieHeader.split(";").reduce(
-          (acc, cookie) => {
-            const [key, value] = cookie.split("=").map((c) => c.trim());
-            acc[key] = value;
-            return acc;
-          },
-          {} as Record<string, string>
-        );
-        rawCookieValue = cookiesManual["myapp-siwe-session"];
-      }
-      console.log(
-        "🍪 [GET /api/posts] Raw myapp-siwe-session cookie value from header:",
-        rawCookieValue
-      );
-    } catch (e) {
-      console.error("Error manually reading cookie for logging:", e);
-    }
-
-    console.log(
-      "🔐 [GET /api/posts] Using sessionOptions:",
-      JSON.stringify(sessionOptions)
-    ); // Log options (mask password if sensitive)
-    // ---- End detailed logging ----
-
-    // Check for Supabase session
-    const {
-      data: { session },
-    } = await createRouteHandlerClient({ cookies }).auth.getSession();
-
-    if (session) {
-      console.log("✅ Supabase session found for user:", session.user.id);
-    } else {
-      console.log("❌ No Supabase session found");
-    }
-
-    // ---- Get SIWE session using Iron Session ----
-    let siweSession: SessionData | null = null;
-    try {
-      siweSession = await getIronSession<SessionData>(
-        cookieStore,
-        sessionOptions
-      );
-      console.log(
-        "📄 [GET /api/posts] Result from getIronSession:",
-        JSON.stringify(siweSession)
-      ); // Log the full result
-      console.log(
-        "📄 [GET /api/posts] siweSession.siwe part:",
-        JSON.stringify(siweSession?.siwe)
-      ); // Log the siwe part
-
-      if (siweSession?.siwe?.address) {
-        console.log(
-          `✅ [GET /api/posts] Iron Session (SIWE) found for user: ${siweSession.siwe.address}`
-        );
-      } else {
-        console.log(
-          "❌ [GET /api/posts] No SIWE data found in Iron Session (after logging result)"
-        );
-      }
-    } catch (ironError) {
-      console.error(
-        "❌ [GET /api/posts] Error fetching/decrypting Iron Session:",
-        ironError
-      );
-    }
-    // ---- End Iron Session Check ----
+    // --- Get NextAuth session ---
+    const session = await getServerSession(authOptions);
+    console.log("🔐 [GET /api/posts] NextAuth session:", session);
 
     // Check X-Custom-Auth header
     const hasCustomAuthHeader = request.headers.get("X-Custom-Auth") === "true";
@@ -114,34 +32,12 @@ export async function GET(request: NextRequest) {
 
     // Determine User ID
     let userId: string | undefined = undefined;
-    if (session?.user?.id) {
-      userId = session.user.id;
-      console.log("👤 Using user ID from Supabase session:", userId);
-    } else if (siweSession?.userId) {
-      // Use userId if it was stored in the SIWE session (might need adjustment)
-      userId = siweSession.userId;
+    if (session?.user?.address) {
+      userId = session.user.address;
       console.log(
-        "👤 Using user ID from SIWE session data (userId field):",
+        "👤 [GET /api/posts] Using user ID from NextAuth session:",
         userId
       );
-    } else if (siweSession?.siwe?.address) {
-      // If userId wasn't stored, try getting it from DB using address (less efficient)
-      console.log(
-        "👤 Attempting to find user ID from SIWE address:",
-        siweSession.siwe.address
-      );
-      const { data: userData, error: userError } =
-        await createRouteHandlerClient({ cookies })
-          .from("users")
-          .select("id")
-          .ilike("address", siweSession.siwe.address)
-          .single();
-      if (userError) {
-        console.error("Error fetching user ID by SIWE address:", userError);
-      } else if (userData) {
-        userId = userData.id;
-        console.log("👤 Found user ID from SIWE address:", userId);
-      }
     } else if (hasCustomAuthHeader) {
       console.log(
         "⚠️ WARNING: X-Custom-Auth header present, but no session found. Cannot determine user ID."
@@ -154,25 +50,20 @@ export async function GET(request: NextRequest) {
 
     // Final check for userId
     if (!userId) {
-      console.log(
-        "🚫 Invalid session data - no user ID found after all checks"
-      );
-      return NextResponse.json(
-        { error: "Invalid session data" },
-        { status: 401 }
-      );
+      console.log("🚫 [GET /api/posts] No authenticated user found.");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("🔍 [GET /api/posts] Fetching posts for user:", userId);
+    console.log(
+      "🔍 [GET /api/posts] Fetching posts for user (address):",
+      userId
+    );
     console.log(
       "ℹ️ [GET /api/posts] Attempting query using supabaseServer (SERVICE ROLE)..."
     );
 
-    // Determine followed IDs (including self)
-    let followedIds = [userId]; // Start with self
-    // TODO: Add logic here later to fetch actual follows if needed
-
     // --- Use supabaseServer for the query ---
+    // Fetch the 20 most recent posts (removed user filter for now)
     const { data: posts, error: postsError } = await supabaseServer
       .from("posts")
       .select(
@@ -183,7 +74,7 @@ export async function GET(request: NextRequest) {
         user_id
         `
       )
-      .in("user_id", followedIds)
+      // .in("user_id", [userId]) // Removed user filter for now
       .is("is_deleted", false)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -281,55 +172,52 @@ export async function GET(request: NextRequest) {
 
 // POST: Create a new post
 export async function POST(request: NextRequest) {
+  console.log("🚀 [POST /api/posts] Received request to create post...");
+
   try {
-    const cookieStore = cookies();
-    const supabaseUserClient = createRouteHandlerClient({
-      cookies: () => cookieStore,
-    });
+    // --- Get NextAuth session ---
+    const session = await getServerSession(authOptions);
+    console.log("🔐 [POST /api/posts] NextAuth session:", session); // Log the session object
 
-    // 1. Verify user authentication (using SIWE session)
-    const session = await getIronSession<SessionData>(
-      cookieStore,
-      sessionOptions
+    let userIdFromSession = session?.user?.address; // Use NextAuth session user address
+
+    // Final check for user ID before proceeding
+    if (!userIdFromSession) {
+      console.log(
+        "🚫 [POST /api/posts] Unauthorized: No authenticated user found."
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.log(
+      "👤 [POST /api/posts] Authenticated user ID:",
+      userIdFromSession
     );
-    if (!session.siwe?.address) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const userAddress = session.siwe.address;
 
-    // 2. Find the user ID associated with the address
-    const { data: userData, error: userError } = await supabaseUserClient
-      .from("users")
-      .select("id")
-      .ilike("address", userAddress)
-      .single();
-
-    if (userError || !userData) {
-      console.error(
-        "[POST /api/posts] Error finding user for SIWE session:",
-        userError
-      );
-      return NextResponse.json(
-        { error: "User not found for session" },
-        { status: 401 }
-      );
-    }
-    const userId = userData.id;
-
-    // 3. Parse request body
-    const { content, media } = await request.json();
+    // Parse request body
+    const body = await request.json();
+    const { content, media } = body;
     if (!content) {
+      console.log(
+        "❌ [POST /api/posts] Validation Error: Request body missing content."
+      );
       return NextResponse.json(
         { error: "Content is required" },
         { status: 400 }
       );
     }
+    console.log(
+      `📝 [POST /api/posts] Creating post for user ${userIdFromSession}: Content='${content}'`
+    );
 
     // 4. Insert the new post using the SERVICE ROLE client
     // We use service role for inserts to bypass potential RLS issues on creation
     const { data: newPostData, error: insertError } = await supabaseServer
       .from("posts")
-      .insert({ user_id: userId, content: content, media_urls: media || [] })
+      .insert({
+        user_id: userIdFromSession,
+        content: content,
+        media_urls: media || [],
+      })
       .select() // Select the newly inserted row
       .single();
 

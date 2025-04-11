@@ -32,6 +32,7 @@ server.log*
 .env*.local
 .env.local
 .env
+.env*
 
 # Editor directories and files
 .idea

@@ -1,47 +1,44 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { sessionOptions, SessionData } from "@/lib/session";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
 import type { Database } from "@/types/supabase";
 
+// --- Check for Storage Bucket Env Var --- //
+if (!process.env.SUPABASE_STORAGE_BUCKET_PROFILE) {
+  console.error(
+    "❌ Storage Setup Error - SUPABASE_STORAGE_BUCKET_PROFILE missing"
+  );
+  throw new Error("SUPABASE_STORAGE_BUCKET_PROFILE is not set in env");
+}
+// --- End Env Var Check --- //
+
 export async function POST(request: Request) {
+  console.log("🔒 [POST /api/profile/upload] Verifying NextAuth session...");
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.address) {
+    console.log(
+      "❌ [POST /api/profile/upload] No address found in NextAuth session."
+    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userAddress = session.user.address;
+  console.log(
+    `✅ [POST /api/profile/upload] Authenticated via NextAuth for address: ${userAddress}`
+  );
+
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient<Database>({
     cookies: () => cookieStore,
   });
 
   try {
-    // 1. Authenticate user using Iron Session / SIWE
-    console.log("🔒 [POST /api/profile/upload] Verifying SIWE session...");
-    const session = await getIronSession<SessionData>(
-      cookieStore,
-      sessionOptions
-    );
-
-    if (!session.siwe?.address) {
-      console.log("❌ [POST /api/profile/upload] No SIWE data in session.");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // We don't strictly *need* the user ID for the upload itself,
-    // just confirmation that a valid SIWE session exists.
-    // But we can still use the address for logging or path generation if desired.
-    const userAddress = session.siwe.address;
-    console.log(
-      `✅ [POST /api/profile/upload] Authenticated via SIWE for address: ${userAddress}`
-    );
-
-    // Optional: If you need the user ID, look it up as in the PATCH route
-    // const { data: userData, ... } = await supabase.from('users').select('id')...
-    // const userId = userData.id;
-    // For now, we'll use the address for the filename for simplicity/consistency
-
-    // 2. Parse form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const type = formData.get("type") as string | null;
 
-    // 3. Validate input
     if (!file) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
@@ -52,23 +49,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Basic file validation (consider adding size/MIME type checks)
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Invalid file data" }, { status: 400 });
     }
 
-    // 4. Generate file path (Using address instead of potentially unavailable userId)
     const fileExt = file.name.split(".").pop();
-    // Using address ensures uniqueness even if userId lookup failed or wasn't performed
     const fileName = `${type}-${userAddress}-${Date.now()}.${fileExt}`;
-    const bucketName = "public"; // Assuming a bucket named 'public' for avatars/headers
-    // Store avatars in 'avatars/' folder and headers in 'headers/' folder within the bucket
+    const bucketName = process.env.SUPABASE_STORAGE_BUCKET_PROFILE!;
     const filePath = `${type}s/${fileName}`;
     console.log(
-      `ℹ️ [POST /api/profile/upload] Generated file path: ${filePath}`
+      `ℹ️ [POST /api/profile/upload] Attempting upload to bucket: '${bucketName}', path: '${filePath}'`
     );
 
-    // 5. Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, file);
@@ -81,28 +73,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // 6. Get public URL
     const { data: publicUrlData } = supabase.storage
       .from(bucketName)
       .getPublicUrl(filePath);
 
     if (!publicUrlData?.publicUrl) {
       console.error("Failed to get public URL for:", filePath);
-      // Optionally, attempt to delete the uploaded file if getting URL fails?
       return NextResponse.json(
         { error: "File uploaded but failed to get public URL" },
         { status: 500 }
       );
     }
 
-    // 7. Return success response
     console.log(
       `✅ [POST /api/profile/upload] Upload successful: ${publicUrlData.publicUrl}`
     );
     return NextResponse.json({ publicUrl: publicUrlData.publicUrl });
   } catch (err: any) {
     console.error("Unexpected error in POST /api/profile/upload:", err);
-    // Check if error is due to body parsing (e.g., wrong content-type)
     if (
       err instanceof Error &&
       err.message.includes("Unsupported content type")

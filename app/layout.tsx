@@ -58,11 +58,6 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
-  appleWebApp: {
-    title: "BaseBuzz",
-    statusBarStyle: "black-translucent",
-    capable: true,
-  },
   formatDetection: {
     telephone: false,
   },

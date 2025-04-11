@@ -5,20 +5,23 @@ import {
   getUserBookmarks,
 } from "@/services/bookmarks.service";
 
+// --- Import NextAuth session --- //
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
+
 // GET: Get a user's bookmarks
 export async function GET(request: NextRequest) {
   try {
+    // --- Get authenticated user ---
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.address; // User address is the ID
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get("userId");
     const limit = searchParams.get("limit");
     const page = searchParams.get("page");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing userId parameter" },
-        { status: 400 },
-      );
-    }
 
     // Parse pagination parameters
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error("Error retrieving bookmarks:", error);
     return NextResponse.json(
       { error: "Failed to retrieve bookmarks" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -39,13 +42,20 @@ export async function GET(request: NextRequest) {
 // POST: Create a new bookmark
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, postId } = body;
+    // --- Get authenticated user ---
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.address;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!userId || !postId) {
+    const body = await request.json();
+    const { postId } = body;
+
+    if (!postId) {
       return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 },
+        { error: "Missing postId parameter" },
+        { status: 400 }
       );
     }
 
@@ -54,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (!result) {
       return NextResponse.json(
         { error: "Failed to create bookmark" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -68,14 +78,20 @@ export async function POST(request: NextRequest) {
 // DELETE: Remove a bookmark
 export async function DELETE(request: NextRequest) {
   try {
+    // --- Get authenticated user ---
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.address;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get("userId");
     const postId = searchParams.get("postId");
 
-    if (!userId || !postId) {
+    if (!postId) {
       return NextResponse.json(
-        { error: "Missing required parameters" },
-        { status: 400 },
+        { error: "Missing postId parameter" },
+        { status: 400 }
       );
     }
 
@@ -84,7 +100,7 @@ export async function DELETE(request: NextRequest) {
     if (!result) {
       return NextResponse.json(
         { error: "Failed to delete bookmark" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 

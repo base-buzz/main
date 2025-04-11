@@ -1,42 +1,37 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getIronSession } from "iron-session"; // Import getIronSession
-import { sessionOptions, SessionData } from "@/lib/session"; // Import session types/options
+import { getServerSession } from "next-auth/next"; // Import NextAuth session helper
+import { authOptions } from "@/lib/authOptions"; // Revert to alias path
 import { supabaseServer } from "@/lib/supabase/server"; // Import server client
+import { z } from "zod";
 
 import type { Database } from "@/types/supabase"; // Assuming you have Supabase types generated
 
 export async function PATCH(request: Request) {
-  const cookieStore = cookies();
-  // Keep user client for user ID lookup if needed
-  const supabaseUserClient = createRouteHandlerClient<Database>({
-    cookies: () => cookieStore,
-  });
-
   try {
-    // 1. Authenticate using Iron Session / SIWE
-    console.log("🔒 [PATCH /api/profile] Verifying SIWE session...");
-    const session = await getIronSession<SessionData>(
-      cookieStore,
-      sessionOptions
-    );
+    // 1. Authenticate using NextAuth
+    console.log("🔒 [PATCH /api/profile] Verifying NextAuth session...");
+    const session = await getServerSession(authOptions);
 
-    if (!session.siwe?.address) {
-      console.log("❌ [PATCH /api/profile] No SIWE data in session.");
+    if (!session?.user?.address) {
+      console.log(
+        "❌ [PATCH /api/profile] No address found in NextAuth session."
+      );
       return NextResponse.json(
-        { error: "Unauthorized - Missing SIWE session" },
+        { error: "Unauthorized - Missing session address" },
         { status: 401 }
       );
     }
-    const userAddress = session.siwe.address;
+
+    const userAddress = session.user.address;
     console.log(
-      `✅ [PATCH /api/profile] Authenticated via SIWE for address: ${userAddress}`
+      `✅ [PATCH /api/profile] Authenticated via NextAuth for address: ${userAddress}`
     );
 
     // 2. Find the user ID associated with the address
     //    (We need this to ensure we update the correct user record)
-    const { data: userData, error: userFindError } = await supabaseUserClient
+    const { data: userData, error: userFindError } = await supabaseServer
       .from("users")
       .select("id")
       .ilike("address", userAddress)

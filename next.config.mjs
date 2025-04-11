@@ -1,5 +1,15 @@
 // import { createContentlayerPlugin } from "next-contentlayer2"; // Removed
 
+// --- Check for Storage Hostname Env Var --- //
+if (!process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME) {
+  console.warn(
+    "⚠️ Image Config Warning - NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME missing. Supabase images may not load."
+  );
+  // Not throwing an error here to allow builds without Supabase configured,
+  // but images from Supabase won't work.
+}
+// --- End Env Var Check --- //
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -9,9 +19,6 @@ const nextConfig = {
     // optimizeCss: true, // Disabled due to critters issues
   },
   reactStrictMode: true,
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  },
   swcMinify: true,
   typescript: {
     ignoreBuildErrors: true, // Temporarily ignore TS errors during build
@@ -37,6 +44,15 @@ const nextConfig = {
         protocol: "https",
         hostname: "robohash.org",
       },
+      // --- Use Env Var for Supabase Storage Hostname --- //
+      process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME
+        ? {
+            protocol: "https",
+            hostname: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME,
+          }
+        : // Add a dummy entry if the env var is not set, to avoid build errors
+          // This entry won't actually match anything useful.
+          { protocol: "https", hostname: "dummy-hostname.local" },
     ],
   },
   // Add build optimization settings

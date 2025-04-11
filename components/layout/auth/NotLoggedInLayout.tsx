@@ -56,8 +56,8 @@ export default function NotLoggedInLayout() {
             <Image
               src="/black.svg"
               alt="BaseBuzz"
-              width={330}
-              height={330}
+              fill
+              className="object-contain"
               priority
             />
           </div>

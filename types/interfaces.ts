@@ -16,6 +16,7 @@ export interface User {
   header_url: string | null;
   created_at: string;
   updated_at: string;
+  handle: string | null;
 }
 
 /**

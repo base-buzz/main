@@ -5,28 +5,32 @@ import {
   checkIfFollowing,
 } from "@/services/engagement.service";
 
+// --- Import NextAuth session --- //
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
+
 // GET: Check if a user is following another user
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const follower_id = searchParams.get("follower_id");
-    const following_id = searchParams.get("following_id");
-
-    if (!follower_id) {
-      return NextResponse.json(
-        { error: "Missing follower_id" },
-        { status: 400 },
-      );
+    // --- Get authenticated user (follower) ---
+    const session = await getServerSession(authOptions);
+    const followerId = session?.user?.address; // User address is the ID
+    if (!followerId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const searchParams = request.nextUrl.searchParams;
+    const following_id = searchParams.get("following_id");
 
     if (!following_id) {
       return NextResponse.json(
         { error: "Missing following_id" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const isFollowing = await checkIfFollowing(follower_id, following_id);
+    // Use authenticated user ID as follower_id
+    const isFollowing = await checkIfFollowing(followerId, following_id);
     return NextResponse.json({ isFollowing });
   } catch (error) {
     console.error("Error in follows API route:", error);
@@ -37,37 +41,37 @@ export async function GET(request: NextRequest) {
 // POST: Follow a user
 export async function POST(request: NextRequest) {
   try {
-    const { follower_id, following_id } = await request.json();
-
-    // Basic validation
-    if (!follower_id) {
-      return NextResponse.json(
-        { error: "Missing follower_id" },
-        { status: 400 },
-      );
+    // --- Get authenticated user (follower) ---
+    const session = await getServerSession(authOptions);
+    const followerId = session?.user?.address;
+    if (!followerId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { following_id } = await request.json();
 
     if (!following_id) {
       return NextResponse.json(
         { error: "Missing following_id" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Prevent following self
-    if (follower_id === following_id) {
+    if (followerId === following_id) {
       return NextResponse.json(
         { error: "Cannot follow yourself" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const follow = await followUser(follower_id, following_id);
+    // Use authenticated user ID as follower_id
+    const follow = await followUser(followerId, following_id);
 
     if (!follow) {
       return NextResponse.json(
         { error: "Failed to follow user" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -81,30 +85,30 @@ export async function POST(request: NextRequest) {
 // DELETE: Unfollow a user
 export async function DELETE(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const follower_id = searchParams.get("follower_id");
-    const following_id = searchParams.get("following_id");
-
-    if (!follower_id) {
-      return NextResponse.json(
-        { error: "Missing follower_id" },
-        { status: 400 },
-      );
+    // --- Get authenticated user (follower) ---
+    const session = await getServerSession(authOptions);
+    const followerId = session?.user?.address;
+    if (!followerId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const searchParams = request.nextUrl.searchParams;
+    const following_id = searchParams.get("following_id");
 
     if (!following_id) {
       return NextResponse.json(
         { error: "Missing following_id" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const success = await unfollowUser(follower_id, following_id);
+    // Use authenticated user ID as follower_id
+    const success = await unfollowUser(followerId, following_id);
 
     if (!success) {
       return NextResponse.json(
         { error: "Failed to unfollow user" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 

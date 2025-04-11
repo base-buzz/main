@@ -15,7 +15,7 @@ interface LayoutWrapperProps {
 }
 
 export default function LayoutWrapper({ children }: LayoutWrapperProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const { isWalletSheetOpen } = useWalletSheet();
 
   // Determine if we're on the landing page
@@ -55,7 +55,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
       <div className="md:hidden">
         <MobileLayout>
           <MobileHeader />
-          {!isLandingPage && <MobileBottomNav />}
+          <MobileBottomNav />
         </MobileLayout>
       </div>
 
