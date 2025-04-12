@@ -7,7 +7,7 @@ import {
 
 // --- Import NextAuth session --- //
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 
 // GET: Get a user's bookmarks
 export async function GET(request: NextRequest) {

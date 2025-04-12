@@ -7,7 +7,7 @@ import {
 
 // --- Import NextAuth session --- //
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 
 // GET: Check if a user is following another user
 export async function GET(request: NextRequest) {
