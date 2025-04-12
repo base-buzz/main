@@ -8,6 +8,10 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME) {
   // Not throwing an error here to allow builds without Supabase configured,
   // but images from Supabase won't work.
 }
+// --- Log the value seen by next.config.mjs ---
+console.log(
+  `[next.config.mjs] NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME: ${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME}`
+);
 // --- End Env Var Check --- //
 
 /** @type {import('next').NextConfig} */
@@ -45,14 +49,14 @@ const nextConfig = {
         hostname: "robohash.org",
       },
       // --- Use Env Var for Supabase Storage Hostname --- //
-      process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME
-        ? {
-            protocol: "https",
-            hostname: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME,
-          }
-        : // Add a dummy entry if the env var is not set, to avoid build errors
-          // This entry won't actually match anything useful.
-          { protocol: "https", hostname: "dummy-hostname.local" },
+      // process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME
+      //   ? { protocol: "https", hostname: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_HOSTNAME }
+      //   : { protocol: "https", hostname: "dummy-hostname.local" },
+      // --- Hardcode Supabase Hostname for Vercel Debugging --- //
+      {
+        protocol: "https",
+        hostname: "hexjniblpmwvwsmocyfo.supabase.co",
+      },
     ],
   },
   // Add build optimization settings
