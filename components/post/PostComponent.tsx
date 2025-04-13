@@ -247,18 +247,15 @@ export default function PostComponent({
 
               {/* Display Single Image if image_url exists */}
               {post.image_url && (
-                <>
-                  {/* Use a consistent small margin-top */}
-                  <div className="relative mt-2 aspect-video w-full max-w-full overflow-hidden rounded-lg border border-border">
-                    <Image
-                      src={post.image_url}
-                      alt="Post image"
-                      fill
-                      className="object-contain" // Use contain to avoid cropping important parts
-                      sizes="(max-width: 768px) 100vw, 500px"
-                    />
-                  </div>
-                </>
+                <div className="relative mt-2 overflow-hidden aspect-video">
+                  <Image
+                    src={post.image_url}
+                    alt="Post image"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 600px"
+                    className="object-cover"
+                  />
+                </div>
               )}
 
               {Array.isArray(post.media) &&

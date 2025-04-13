@@ -9,7 +9,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createPost, getTrendingPosts } from "@/services/posts.service";
+import {
+  createPost,
+  getTrendingPosts,
+  createReply,
+} from "@/services/posts.service";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getServerSession } from "next-auth/next"; // Import NextAuth session helper
 import { authOptions } from "@/lib/authOptions"; // CORRECTED Import authOptions
@@ -256,95 +260,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // This is the user's UUID, not the address
     const userUuid = userData.id;
-    console.log(
-      `👤 [POST /api/posts] Found user UUID: ${userUuid} for address: ${userIdFromSession}`
-    );
-    // --- End fetch User UUID ---
+    console.log(`✅ [POST /api/posts] Found user UUID: ${userUuid}`);
 
-    // 4. Insert the new post using the SERVICE ROLE client with the User's UUID
-    console.log(
-      `📝 [POST /api/posts] Inserting post for user UUID ${userUuid}:`,
-      {
-        content,
-        image_url,
-        reply_to_id,
-        quote_tweet_id,
-      }
-    );
-    const { data: newPostData, error: insertError } = await supabaseServer
-      .from("posts")
-      .insert({
-        user_id: userUuid, // Use the fetched UUID
-        content: content || null, // Allow null content if image exists
-        image_url: image_url || null, // Save the image URL
-        reply_to_id: reply_to_id || null, // Use correct DB column name: reply_to_id
-      })
-      // Disambiguate the user relationship using the foreign key name
-      .select(
-        "*, user:users!posts_user_id_fkey(id, display_name, avatar_url, address)"
-      )
-      .single();
-
-    if (insertError || !newPostData) {
-      console.error("❌ [POST /api/posts] Error inserting post:", insertError);
-      return NextResponse.json(
-        { error: "Failed to create post", details: insertError?.message },
-        { status: 500 }
+    let newPost;
+    // Check if it's a reply or a new post
+    if (reply_to_id) {
+      console.log(
+        `💬 [POST /api/posts] Creating reply to post ${reply_to_id}...`
+      );
+      // Call createReply service function
+      // Pass image_url as well
+      newPost = await createReply(userUuid, content, reply_to_id, image_url);
+      console.log(`✅ [POST /api/posts] Reply created successfully:`, newPost);
+    } else {
+      console.log(`📝 [POST /api/posts] Creating new post...`);
+      // Call createPost service function (pass userUuid)
+      // Construct the PostInsert object
+      newPost = await createPost({
+        user_id: userUuid,
+        content: content,
+        image_url: image_url, // Pass image_url
+        reply_to_id: null, // reply_to_id is null for new posts
+      });
+      console.log(
+        `✅ [POST /api/posts] New post created successfully:`,
+        newPost
       );
     }
 
-    // 5. Fetch the newly created post WITH the joined user data using SERVICE ROLE client
-    // This ensures the returned object has all necessary fields for the optimistic update
-    console.log(
-      `ℹ️ [POST /api/posts] Fetching newly created post ${newPostData.id} with user data...`
-    );
-    const { data: fullNewPost, error: fetchError } = await supabaseServer
-      .from("posts")
-      .select(
-        `
-        *,
-        user:users!posts_user_id_fkey (
-          id,
-          display_name,
-          avatar_url,
-          address
-        )
-        `
-      )
-      .eq("id", newPostData.id)
-      .single();
-
-    if (fetchError || !fullNewPost) {
-      console.error(
-        "❌ [POST /api/posts] Error fetching full new post data:",
-        fetchError
-      );
-      // Return the basic inserted data as a fallback if fetching the full post fails
-      return NextResponse.json(newPostData, { status: 201 });
-    }
-
-    // 6. Map the full post data to the format expected by the frontend
-    const author = fullNewPost.user as Partial<User> | null;
-    // Provide null coalescing for generateHandle arguments
-    const displayNameForHandle = author?.display_name ?? null;
-    const addressForHandle = author?.address ?? null;
-
-    const enhancedPost = {
-      ...(fullNewPost as any),
-      userId: author?.id || fullNewPost.user_id,
-      userName: author?.display_name || "Anonymous",
-      userAvatar:
-        author?.avatar_url ||
-        `https://api.dicebear.com/7.x/shapes/svg?seed=${fullNewPost.user_id || "anon"}`,
-      userHandle: generateHandle(displayNameForHandle, addressForHandle),
-    };
-
-    console.log(
-      "✅ [POST /api/posts] Post created successfully, returning enhanced post:",
-      enhancedPost.id
-    );
-    return NextResponse.json(enhancedPost, { status: 201 });
+    // Return the created post data
+    return NextResponse.json(newPost, { status: 201 });
   } catch (error) {
     console.error("❌ [POST /api/posts] Unexpected error:", error);
     const errorMessage =

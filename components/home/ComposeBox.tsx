@@ -211,7 +211,7 @@ export function ComposeBox({ user, onPostCreated }: ComposeBoxProps) {
     <div>
       <form onSubmit={handleSubmit}>
         <div className="flex gap-3">
-          <Avatar className="h-10 w-10 rounded-full">
+          <Avatar className="h-10 w-10 rounded-full pt-1">
             <AvatarImage
               src={effectiveUser?.avatar_url || "/default-avatar.png"}
               alt={effectiveUser.display_name || "User"}

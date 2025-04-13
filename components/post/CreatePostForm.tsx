@@ -29,14 +29,14 @@ import { useRouter } from "next/navigation";
 import { postApi } from "@/lib/api";
 import { Post } from "@/types/interfaces";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface CreatePostFormProps {
   userId: string;
-  onPostCreated?: (post: Post) => void;
+  userAvatar?: string;
   quoteTweetId?: string;
   replyToId?: string;
   className?: string;
@@ -44,7 +44,7 @@ interface CreatePostFormProps {
 
 export default function CreatePostForm({
   userId,
-  onPostCreated,
+  userAvatar,
   quoteTweetId,
   replyToId,
   className,
@@ -91,11 +91,6 @@ export default function CreatePostForm({
       setMedia([]);
       setIsTextareaFocused(false);
 
-      // Call the onPostCreated callback if provided
-      if (onPostCreated && newPost) {
-        onPostCreated(newPost);
-      }
-
       // Refresh the page to show the new post
       router.refresh();
     } catch (error) {
@@ -106,148 +101,115 @@ export default function CreatePostForm({
   };
 
   return (
-    <Card className={cn("p-3", className)}>
-      <form onSubmit={handleSubmit}>
-        <Textarea
-          placeholder={
-            replyToId
-              ? "Write your reply..."
-              : quoteTweetId
-                ? "Add a comment..."
-                : "What's happening?"
-          }
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onFocus={() => setIsTextareaFocused(true)}
-          onBlur={() => content.length === 0 && setIsTextareaFocused(false)}
-          className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
+    <div className={cn("flex w-full space-x-3", className)}>
+      <Avatar className="mt-1 h-10 w-10">
+        <AvatarImage src={userAvatar} alt="User avatar" />
+        <AvatarFallback>??</AvatarFallback>
+      </Avatar>
 
-        {media.length > 0 && (
-          <div
-            className={`mt-2 grid gap-2 ${media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
-          >
-            {media.map((url, index) => (
-              <div
-                key={index}
-                className="relative aspect-video overflow-hidden rounded-lg"
-              >
-                <NextImage
-                  src={url}
-                  alt={`Upload preview ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="absolute right-2 top-2 z-10 h-6 w-6 rounded-full bg-background/80 p-1"
-                  onClick={() => handleRemoveMedia(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {(isTextareaFocused || content.length > 0) && (
-          <div className="my-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full px-3 text-primary"
-            >
-              <Globe className="mr-1 h-4 w-4" />
-              Everyone can reply
-            </Button>
-          </div>
-        )}
-
-        <div className="mt-4 flex items-center justify-between border-t pt-4">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={handleAddMedia}
-              disabled={media.length >= 4}
-              title={
-                media.length >= 4 ? "Maximum 4 images allowed" : "Add image"
-              }
-              className="rounded-full text-primary"
-            >
-              {/* eslint-disable-next-line jsx-a11y/alt-text */}
-              <Image className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary"
-            >
-              {/* Add GIF icon */}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary"
-            >
-              {/* Add Poll icon */}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Add emoji"
-              className="rounded-full text-primary"
-            >
-              <Smile className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary"
-            >
-              {/* Add Schedule icon */}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary"
-            >
-              {/* Add Location icon */}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary"
-            >
-              <Globe className="h-5 w-5" />
-            </Button>
-          </div>
-          <Button
-            type="submit"
-            disabled={isSubmitting || (!content.trim() && media.length === 0)}
-            className="rounded-full bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-          >
-            {isSubmitting
-              ? "Posting..."
-              : replyToId
-                ? "Reply"
+      <div className="flex-1">
+        <form onSubmit={handleSubmit} className="w-full">
+          <Textarea
+            placeholder={
+              replyToId
+                ? "Write your reply..."
                 : quoteTweetId
-                  ? "Quote"
-                  : "Post"}
-          </Button>
-        </div>
-      </form>
-    </Card>
+                  ? "Add a comment..."
+                  : "What's happening?"
+            }
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onFocus={() => setIsTextareaFocused(true)}
+            onBlur={() => content.length === 0 && setIsTextareaFocused(false)}
+            className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-lg focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+
+          {media.length > 0 && (
+            <div
+              className={`mt-2 grid gap-2 ${media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+            >
+              {media.map((url, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-video overflow-hidden rounded-lg"
+                >
+                  <NextImage
+                    src={url}
+                    alt={`Upload preview ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 top-2 z-10 h-6 w-6 rounded-full bg-background/80 p-1"
+                    onClick={() => handleRemoveMedia(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(isTextareaFocused || content.length > 0) && (
+            <div className="my-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-3 text-sm text-primary hover:bg-primary/10"
+              >
+                <Globe className="mr-1 h-4 w-4" />
+                Everyone can reply
+              </Button>
+            </div>
+          )}
+
+          <div className="my-2 border-t"></div>
+
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleAddMedia}
+                disabled={media.length >= 4}
+                title={media.length >= 4 ? "Maximum 4 images" : "Add image"}
+                className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+              >
+                <Image className="h-5 w-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="Add emoji"
+                className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+              >
+                <Smile className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || (!content.trim() && media.length === 0)}
+              className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+            >
+              {isSubmitting
+                ? "Posting..."
+                : replyToId
+                  ? "Reply"
+                  : quoteTweetId
+                    ? "Quote"
+                    : "Post"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

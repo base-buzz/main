@@ -213,8 +213,9 @@ export async function createPost(post: PostInsert): Promise<Post | null> {
 // Create a reply to a post
 export async function createReply(
   userId: string,
+  content: string,
   postId: string,
-  content: string
+  imageUrl?: string | null
 ): Promise<Post | null> {
   try {
     const { data, error } = await supabaseServer
@@ -223,6 +224,7 @@ export async function createReply(
         user_id: userId,
         content,
         reply_to_id: postId,
+        image_url: imageUrl ?? null,
       })
       .select()
       .single();

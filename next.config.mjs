@@ -57,6 +57,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "hexjniblpmwvwsmocyfo.supabase.co",
       },
+      // Add Unsplash for the mock image previews
+      {
+        protocol: "https",
+        hostname: "source.unsplash.com",
+      },
     ],
   },
   // Add build optimization settings

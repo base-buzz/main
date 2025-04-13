@@ -17,9 +17,10 @@ This document outlines rules and best practices for the Cursor AI assistant to f
     - When needing to understand a file's content, imports, or specific functions, use `read_file` (or `cat` via `run_terminal_cmd` for smaller files if appropriate) _before_ asking the user about its contents.
     - If editing a file, always read the relevant section first unless the change is trivial (e.g., adding a small, unambiguous snippet).
 
-2.  **Server Management (`pnpm`, `run_terminal_cmd`):**
+2.  **Server Management (`pnpm`, `run_terminal_cmd`, MCP Browser Tools):**
 
     - After making code changes (especially to server-side code, environment variables, or configuration), proactively suggest or execute the command to restart the Next.js development server using the `pnpm run reload` script. This script handles killing existing processes and restarting the server on port 3333.
+    - After triggering `pnpm run reload`, wait a few seconds for the server to restart and the browser to potentially reload, then **proactively check MCP browser logs** (`getConsoleErrors`, `getNetworkErrors`) for any new client-side errors introduced by the changes.
 
 3.  **Database Interaction (MCP Supabase Tools):**
 

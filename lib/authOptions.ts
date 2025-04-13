@@ -9,7 +9,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { getCsrfToken } from "next-auth/react";
 import { SiweMessage } from "siwe";
 import { z } from "zod";
-import { supabaseServer } from "@/lib/supabase/server";
+import {
+  getUserHandle,
+  getUserProfileForSession,
+} from "@/lib/auth/server-helpers";
 
 // --- Environment Variable Checks (Keep them here or move to a separate config loader) --- //
 if (!process.env.NEXTAUTH_SECRET) {
@@ -19,10 +22,6 @@ if (!process.env.NEXTAUTH_SECRET) {
 if (!process.env.NEXTAUTH_URL) {
   console.error("Auth Setup Error - NEXTAUTH_URL missing");
   throw new Error("NEXTAUTH_URL is not set");
-}
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("Auth Setup Error - Supabase connection details missing");
-  throw new Error("Supabase URL or Service Role Key is not set");
 }
 
 const envSchema = z.object({
@@ -42,100 +41,10 @@ try {
   throw new Error("Environment variable validation failed");
 }
 
-// --- Helper Function: Get/Generate User Handle (Keep it here as it's used by authOptions) --- //
-async function getUserHandle(address: string): Promise<string | null> {
-  if (!supabaseServer) {
-    console.error("getUserHandle - Supabase client unavailable");
-    return null;
-  }
-  const lowerCaseAddress = address.toLowerCase();
-  console.log("getUserHandle - Attempting to find/generate handle", {
-    address: lowerCaseAddress,
-  });
-  try {
-    const { data: user, error: selectError } = await supabaseServer
-      .from("users")
-      .select("handle")
-      .eq("address", lowerCaseAddress)
-      .maybeSingle();
-    if (selectError && selectError.code !== "PGRST116") {
-      console.error("getUserHandle - Supabase select error", {
-        address: lowerCaseAddress,
-        code: selectError.code,
-        message: selectError.message,
-      });
-      throw selectError;
-    }
-    if (user?.handle) {
-      console.log("getUserHandle - Found existing handle", {
-        address: lowerCaseAddress,
-        handle: user.handle,
-      });
-      return user.handle;
-    } else {
-      const generatedHandle = lowerCaseAddress.slice(-6);
-      console.log(
-        "getUserHandle - Handle is missing or user not found, using generated handle",
-        { address: lowerCaseAddress, generatedHandle }
-      );
-      if (user) {
-        console.log(
-          "getUserHandle - Updating existing user with generated handle",
-          { address: lowerCaseAddress }
-        );
-        const { data: updatedUser, error: updateError } = await supabaseServer
-          .from("users")
-          .update({
-            handle: generatedHandle,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("address", lowerCaseAddress)
-          .select("handle")
-          .single();
-        if (updateError) {
-          console.error("getUserHandle - Supabase update error", {
-            address: lowerCaseAddress,
-            error: updateError,
-          });
-          throw updateError;
-        }
-        console.log("getUserHandle - Handle updated successfully", {
-          address: lowerCaseAddress,
-          handle: updatedUser?.handle,
-        });
-        return updatedUser?.handle ?? null;
-      } else {
-        console.log(
-          "getUserHandle - Inserting new user with generated handle",
-          { address: lowerCaseAddress }
-        );
-        const { data: newUser, error: insertError } = await supabaseServer
-          .from("users")
-          .insert({ address: lowerCaseAddress, handle: generatedHandle })
-          .select("handle")
-          .single();
-        if (insertError) {
-          console.error("getUserHandle - Supabase insert error", {
-            address: lowerCaseAddress,
-            error: insertError,
-          });
-          throw insertError;
-        }
-        console.log("getUserHandle - New user inserted successfully", {
-          address: lowerCaseAddress,
-          handle: newUser?.handle,
-        });
-        return newUser?.handle ?? null;
-      }
-    }
-  } catch (error) {
-    console.error(
-      `Failed to get/generate handle for ${lowerCaseAddress}:`,
-      error
-    );
-    return null;
-  }
-}
+// --- Helper Function: Get/Generate User Handle (Moved to server-helpers.ts) --- //
+// async function getUserHandle(address: string): Promise<string | null> {
+//   ...
+// }
 
 // --- NextAuth Configuration Export --- //
 export const authOptions: NextAuthOptions = {
@@ -188,10 +97,6 @@ export const authOptions: NextAuthOptions = {
             console.log("SIWE Auth Success, Getting Handle", {
               address: userAddress,
             });
-            console.log(
-              "Checking supabaseServer BEFORE calling getUserHandle:",
-              !!supabaseServer
-            );
             const userHandle = await getUserHandle(userAddress);
             console.log("SIWE Authorize - Returning User Object", {
               address: userAddress,
@@ -292,48 +197,16 @@ export const authOptions: NextAuthOptions = {
         session.user.address = userAddress;
 
         try {
-          console.log("Session Callback - Fetching user profile from DB", {
+          console.log("Session Callback - Fetching user profile via helper", {
             address: userAddress,
           });
-          const { data: userProfile, error } = await supabaseServer
-            .from("users")
-            .select(
-              "handle, display_name, avatar_url, header_url, bio, location, tier, email" // Select all needed fields
-            )
-            .eq("address", userAddress)
-            .single(); // Use single() as address should be unique
+          // Use the new helper function
+          const userProfile = await getUserProfileForSession(userAddress);
 
-          if (error) {
-            // Handle case where user might not be in DB yet or other errors
-            // PGRST116: Row not found - expected if getUserHandle failed or hasn't run
-            if (error.code !== "PGRST116") {
-              console.error(
-                "Session Callback - Supabase error fetching profile",
-                {
-                  address: userAddress,
-                  code: error.code,
-                  message: error.message,
-                }
-              );
-            } else {
-              console.log(
-                "Session Callback - User not found in DB yet, returning basic session",
-                { address: userAddress }
-              );
-              // Assign handle from token if DB lookup failed but token has it (from initial sign-in)
-              session.user.handle = token.handle as string | null;
-              // Keep other fields default/null as user profile doesn't exist
-              session.user.name = null;
-              session.user.image = null;
-              (session.user as any).bio = null;
-              (session.user as any).location = null;
-              (session.user as any).header_url = null;
-              (session.user as any).tier = null;
-              session.user.email = null; // Ensure email is also cleared if profile not found
-            }
-          } else if (userProfile) {
+          // Process the result from the helper function
+          if (userProfile) {
             console.log(
-              "Session Callback - User profile fetched successfully",
+              "Session Callback - User profile fetched successfully via helper",
               { address: userAddress }
             );
             // Populate session.user with fetched data

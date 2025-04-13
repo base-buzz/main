@@ -16,7 +16,7 @@ const TABS = [
 export function HomeTabs() {
   const pathname = usePathname();
   const searchParams = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : "",
+    typeof window !== "undefined" ? window.location.search : ""
   );
   const currentTab = searchParams.get("tab") || "for-you";
 
@@ -31,11 +31,14 @@ export function HomeTabs() {
             key={tab.id}
             href={tab.path}
             className={cn(
-              "flex flex-1 items-center justify-center border-b-2 border-transparent px-4 py-2 font-medium transition-colors hover:bg-muted/50",
-              isActive && "border-[#1d9bf0] text-[#1d9bf0]",
+              "relative flex flex-1 items-center justify-center px-4 py-3 font-medium transition-colors hover:bg-muted/50",
+              isActive ? "text-foreground" : "text-muted-foreground"
             )}
           >
             {tab.label}
+            {isActive && (
+              <div className="absolute bottom-0 h-1 w-14 rounded-full bg-primary"></div>
+            )}
           </Link>
         );
       })}
