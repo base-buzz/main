@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { usePathname } from "next/navigation";
 
@@ -23,6 +23,11 @@ const truncateMiddle = (
 export const DiagnosticInfo: React.FC = () => {
   const { user, isLoading } = useCurrentUser();
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const clientSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const clientSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -66,7 +71,8 @@ export const DiagnosticInfo: React.FC = () => {
           <strong>Client Supa Anon Key:</strong> {clientSupabaseAnonKey}
         </li>
         <li>
-          <strong>Render Time:</strong> {new Date().toLocaleTimeString()}
+          <strong>Render Time:</strong>{" "}
+          {isClient ? new Date().toLocaleTimeString() : "..."}
         </li>
       </ul>
 

@@ -17,9 +17,9 @@ This document outlines rules and best practices for the Cursor AI assistant to f
     - When needing to understand a file's content, imports, or specific functions, use `read_file` (or `cat` via `run_terminal_cmd` for smaller files if appropriate) _before_ asking the user about its contents.
     - If editing a file, always read the relevant section first unless the change is trivial (e.g., adding a small, unambiguous snippet).
 
-2.  **Server Management (`npm`, `run_terminal_cmd`):**
+2.  **Server Management (`pnpm`, `run_terminal_cmd`):**
 
-    - After making code changes (especially to server-side code, environment variables, or configuration), proactively suggest or execute the command to restart the Next.js development server (likely `npm run dev`). Assume this is necessary unless context suggests otherwise.
+    - After making code changes (especially to server-side code, environment variables, or configuration), proactively suggest or execute the command to restart the Next.js development server using the `pnpm run reload` script. This script handles killing existing processes and restarting the server on port 3333.
 
 3.  **Database Interaction (MCP Supabase Tools):**
 
@@ -39,7 +39,14 @@ This document outlines rules and best practices for the Cursor AI assistant to f
     - If investigating server-side rendering issues or API route behavior, consider using `curl` with appropriate headers/cookies (as guided by `AUTHENTICATION.md` and potentially asking the user for session details if needed for authenticated routes) via `run_terminal_cmd` to test the endpoint directly. Append `| cat` to view the output.
 
 6.  **External Information (`web_search`):**
+
     - If encountering errors related to specific libraries, APIs (beyond the project's core logic covered in `AUTHENTICATION.md`), or concepts not present in the codebase context, use `web_search` to find documentation, explanations, or solutions _before_ stating you lack the information.
+
+7.  **Git Workflow (`git`, `run_terminal_cmd`):**
+    - When asked to `git push`, first check the status (`git status | cat`).
+    - If there are uncommitted changes, stage them (`git add .`) and propose a commit message based on the changes, or ask the user for one. Then, commit (`git commit -m "..."`).
+    - After ensuring changes are committed (or if there were no changes), proceed with `git push`.
+    - For other `git` commands, execute them directly but be mindful of the potential impact (e.g., `git reset`, `git checkout`).
 
 ## Goal
 
