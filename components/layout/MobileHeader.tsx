@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useWalletSheet } from "@/hooks/useWalletSheet";
-import MobileSheetNav from "./MobileSheetNav";
 import { useAccount } from "wagmi";
 import { WalletSheet } from "@/components/ui/wallet/wallet-sheet";
 import { HomeTabs } from "@/components/home/HomeTabs";
@@ -61,7 +60,7 @@ export default function MobileHeader() {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          <MobileSheetNav />
+          {/* Removed <MobileSheetNav /> */}
         </div>
 
         <div className="absolute left-1/2 -translate-x-1/2">

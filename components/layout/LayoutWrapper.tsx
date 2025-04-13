@@ -6,9 +6,7 @@ import { cn } from "@/lib/utils";
 import LeftNavigation from "./LeftNavigation";
 import RightSidebar from "./RightSidebar";
 import MobileHeader from "./MobileHeader";
-import MobileBottomNav from "./MobileBottomNav";
 import { useWalletSheet } from "@/hooks/useWalletSheet";
-import MobileLayout from "./MobileLayout";
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -53,10 +51,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     >
       {/* Mobile layout */}
       <div className="md:hidden">
-        <MobileLayout>
-          <MobileHeader />
-          <MobileBottomNav />
-        </MobileLayout>
+        <MobileHeader />
       </div>
 
       {/* Twitter-like 3-column layout */}
