@@ -73,19 +73,19 @@ export default async function HandlePage({ params }: HandlePageProps) {
           <PostsSection
             // Map the fetched posts to the structure expected by PostsSection
             posts={userPosts.map((post) => ({
-              // Cast to any initially to satisfy TS during mapping
-              ...(post as any),
-              ...post,
-              // Rename/map fields as needed by PostsSection's Post type
-              userId: post.user_id,
-              createdAt: post.created_at,
-              comments: post.replies_count ?? 0, // Use comments if that is the expected prop name
-              retweets: post.reposts_count ?? 0, // Use retweets if that is the expected prop name
+              // Spread the original post object first
+              ...(post as any), // Use 'as any' initially to bypass strict checks
+              // Override/add specific fields needed by PostsSection
+              userId: post.user_id, // Ensure userId is mapped correctly
+              createdAt: post.created_at, // Ensure createdAt is mapped
+              comments: [], // Pass empty array for comments
+              retweets: post.reposts_count ?? 0,
               likes: post.likes_count ?? 0,
-              // Add other fields expected by the Post type in PostsSection
-              userName: typedProfileUser.display_name || handle, // Add author info
+              userName: typedProfileUser.display_name || handle,
               userAvatar: typedProfileUser.avatar_url || "/default-avatar.png",
               userHandle: handle,
+              verified: false, // Ensure verified exists
+              // image_url should be included from the spread '...post'
             }))}
             loading={false} // Data is fetched server-side
             currentUserId={currentUserId ?? undefined} // Ensure type is string | undefined

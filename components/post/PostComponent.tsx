@@ -1,3 +1,29 @@
+/**
+ * Post Component (`components/post/PostComponent.tsx`)
+ *
+ * What it does:
+ * - Renders a single post or comment/reply in a style similar to Twitter/X.
+ * - Displays user avatar, name, handle, post content, image/media, and action buttons (like, retweet, comment, share).
+ * - Handles user interactions like liking, retweeting, and navigating to the post detail page.
+ * - Can optionally display nested comments if configured (used on the post detail page).
+ *
+ * How it does it:
+ * - Marked as a Client Component ("use client") for state management and event handling.
+ * - Receives post data conforming to the `Post` interface as a prop.
+ * - Fetches author details (`postUser`) if not provided directly in the `post` prop using `userApi.getUserById`.
+ * - Manages local state for like/retweet status and counts for optimistic UI updates.
+ * - Uses `useRouter` for navigation.
+ * - Action buttons trigger API calls via `postApi` (likePost, unlikePost, retweetPost, etc.).
+ * - Handles navigation to the post detail page via `handlePostClick`, preventing navigation if interactive elements (buttons, links) are clicked directly using `e.stopPropagation()`.
+ * - Uses `formatTimeAgo` utility for relative date display.
+ * - Uses shadcn/ui components (Avatar, Button, etc.) and custom Icons.
+ *
+ * Dependencies for Post Actions:
+ * - `@/lib/api`: Provides `userApi` and `postApi` for fetching user data and performing post actions.
+ * - `@/types/interfaces`: Defines the `Post` and `User` interfaces.
+ * - `next/navigation`: For `useRouter`.
+ * - `@/hooks/useCurrentUser`: (Potentially, if `currentUserId` prop isn't always provided reliably)
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -80,6 +106,7 @@ export default function PostComponent({
   }, [post.userId]);
 
   const handlePostClick = (e: React.MouseEvent) => {
+    console.log("[PostComponent] handlePostClick triggered for post:", post.id);
     // Prevent navigation if the click was on an interactive element
     if (
       (e.target as HTMLElement).closest("button") ||
@@ -211,40 +238,63 @@ export default function PostComponent({
             </div>
 
             <div className="mt-0.5">
-              <p className="whitespace-pre-wrap text-[15px] leading-[20px]">
-                {post.content}
-              </p>
-
-              {Array.isArray(post.media) && post.media.length > 0 && (
-                <div
-                  className={cn(
-                    "mt-3 grid gap-2",
-                    post.media?.length === 1 && "grid-cols-1",
-                    post.media?.length === 2 && "grid-cols-2",
-                    post.media?.length === 3 && "grid-cols-2",
-                    post.media?.length === 4 && "grid-cols-2"
-                  )}
-                >
-                  {post.media.map((media, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "relative aspect-video overflow-hidden rounded-lg",
-                        post.media?.length === 3 && index === 0 && "col-span-2"
-                      )}
-                    >
-                      <Image
-                        key={index}
-                        src={media}
-                        alt={`Post media ${index + 1}`}
-                        fill
-                        className={cn("object-cover")}
-                        sizes="(max-width: 768px) 100vw, 500px"
-                      />
-                    </div>
-                  ))}
-                </div>
+              {/* Display content only if it exists */}
+              {post.content && (
+                <p className="whitespace-pre-wrap text-[15px] leading-[20px]">
+                  {post.content}
+                </p>
               )}
+
+              {/* Display Single Image if image_url exists */}
+              {post.image_url && (
+                <>
+                  {/* Use a consistent small margin-top */}
+                  <div className="relative mt-2 aspect-video w-full max-w-full overflow-hidden rounded-lg border border-border">
+                    <Image
+                      src={post.image_url}
+                      alt="Post image"
+                      fill
+                      className="object-contain" // Use contain to avoid cropping important parts
+                      sizes="(max-width: 768px) 100vw, 500px"
+                    />
+                  </div>
+                </>
+              )}
+
+              {Array.isArray(post.media) &&
+                post.media.length > 0 &&
+                !post.image_url && (
+                  <div
+                    className={cn(
+                      "mt-3 grid gap-2",
+                      post.media?.length === 1 && "grid-cols-1",
+                      post.media?.length === 2 && "grid-cols-2",
+                      post.media?.length === 3 && "grid-cols-2",
+                      post.media?.length === 4 && "grid-cols-2"
+                    )}
+                  >
+                    {post.media.map((media, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "relative aspect-video overflow-hidden rounded-lg",
+                          post.media?.length === 3 &&
+                            index === 0 &&
+                            "col-span-2"
+                        )}
+                      >
+                        <Image
+                          key={index}
+                          src={media}
+                          alt={`Post media ${index + 1}`}
+                          fill
+                          className={cn("object-cover")}
+                          sizes="(max-width: 768px) 100vw, 500px"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               {post.quoteTweet && (
                 <div className="mt-3 rounded-xl border p-3 hover:bg-muted/50">

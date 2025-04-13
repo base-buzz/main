@@ -6,27 +6,28 @@ import { authOptions } from "@/lib/authOptions";
 import type { Database } from "@/types/supabase";
 
 // --- Check for Storage Bucket Env Var --- //
-if (!process.env.SUPABASE_STORAGE_BUCKET_PROFILE_MEDIA) {
+// Use the correct env var for post images
+if (!process.env.SUPABASE_STORAGE_BUCKET_POST_IMAGES) {
   console.error(
-    "❌ Storage Setup Error - SUPABASE_STORAGE_BUCKET_PROFILE_MEDIA missing"
+    "❌ Storage Setup Error - SUPABASE_STORAGE_BUCKET_POST_IMAGES missing"
   );
-  throw new Error("SUPABASE_STORAGE_BUCKET_PROFILE_MEDIA is not set in env");
+  throw new Error("SUPABASE_STORAGE_BUCKET_POST_IMAGES is not set in env");
 }
 // --- End Env Var Check --- //
 
 export async function POST(request: Request) {
-  console.log("🔒 [POST /api/profile/upload] Verifying NextAuth session...");
+  console.log("🔒 [POST /api/posts/upload] Verifying NextAuth session...");
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.address) {
     console.log(
-      "❌ [POST /api/profile/upload] No address found in NextAuth session."
+      "❌ [POST /api/posts/upload] No address found in NextAuth session."
     );
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const userAddress = session.user.address;
   console.log(
-    `✅ [POST /api/profile/upload] Authenticated via NextAuth for address: ${userAddress}`
+    `✅ [POST /api/posts/upload] Authenticated via NextAuth for address: ${userAddress}`
   );
 
   const cookieStore = cookies();
@@ -37,16 +38,9 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const type = formData.get("type") as string | null;
 
     if (!file) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
-    }
-    if (type !== "avatar" && type !== "header") {
-      return NextResponse.json(
-        { error: "Invalid type specified. Must be 'avatar' or 'header'" },
-        { status: 400 }
-      );
     }
 
     if (!(file instanceof File)) {
@@ -54,11 +48,13 @@ export async function POST(request: Request) {
     }
 
     const fileExt = file.name.split(".").pop();
-    const fileName = `${type}-${userAddress}-${Date.now()}.${fileExt}`;
-    const bucketName = process.env.SUPABASE_STORAGE_BUCKET_PROFILE_MEDIA!;
-    const filePath = `${type}s/${fileName}`;
+    const fileName = `post-${userAddress}-${Date.now()}.${fileExt}`;
+    // Use the correct env var for post images
+    const bucketName = process.env.SUPABASE_STORAGE_BUCKET_POST_IMAGES!;
+    // Save under a 'posts/' subdirectory
+    const filePath = `posts/${fileName}`;
     console.log(
-      `ℹ️ [POST /api/profile/upload] Attempting upload to bucket: '${bucketName}', path: '${filePath}'`
+      `ℹ️ [POST /api/posts/upload] Attempting upload to bucket: '${bucketName}', path: '${filePath}'`
     );
 
     const { error: uploadError } = await supabase.storage
@@ -86,11 +82,12 @@ export async function POST(request: Request) {
     }
 
     console.log(
-      `✅ [POST /api/profile/upload] Upload successful: ${publicUrlData.publicUrl}`
+      `✅ [POST /api/posts/upload] Upload successful: ${publicUrlData.publicUrl}`
     );
+    // Return only the public URL
     return NextResponse.json({ publicUrl: publicUrlData.publicUrl });
   } catch (err: any) {
-    console.error("Unexpected error in POST /api/profile/upload:", err);
+    console.error("Unexpected error in POST /api/posts/upload:", err);
     if (
       err instanceof Error &&
       err.message.includes("Unsupported content type")

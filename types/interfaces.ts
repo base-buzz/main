@@ -35,6 +35,7 @@ export interface Post {
   createdAt: string;
   likes: number;
   retweets: number;
+  image_url?: string | null;
   media?: string[]; // Array of media URLs (images/videos)
   comments: Post[]; // Nested replies (each comment is a Post)
   quoteTweet?: string; // Reference to another post's id (for quote tweets)

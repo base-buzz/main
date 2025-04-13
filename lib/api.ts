@@ -272,31 +272,32 @@ export const postApi = {
   async createPost(
     userId: string,
     content: string,
-    mediaUrls?: string[],
+    imageUrl?: string | null,
     replyToId?: string,
     quoteTweetId?: string
   ): Promise<Post> {
     try {
-      console.log("📝 Creating new post...");
+      console.log("✉️ Creating new post...", {
+        userId,
+        content: content.substring(0, 50),
+        imageUrl,
+        replyToId,
+        quoteTweetId,
+      });
 
-      // Construct body with all relevant fields
-      const body: Record<string, any> = {
-        user_id: userId, // Map to user_id expected by backend
+      const body = {
         content,
+        user_id: userId,
+        reply_to_id: replyToId,
+        quote_tweet_id: quoteTweetId,
+        image_url: imageUrl ?? null,
       };
-      if (mediaUrls && mediaUrls.length > 0) {
-        body.mediaUrls = mediaUrls;
-      }
-      if (replyToId) {
-        body.reply_to_id = replyToId; // Map to reply_to_id
-      }
-      if (quoteTweetId) {
-        body.quote_tweet_id = quoteTweetId; // Map to quote_tweet_id
-      }
+
+      console.log("✉️ Sending POST request body to /api/posts:", body);
 
       const newPost = await apiFetch<Post>("/api/posts", {
         method: "POST",
-        body: JSON.stringify(body), // Send the constructed body
+        body: JSON.stringify(body),
       });
 
       console.log("✅ Post created successfully");

@@ -71,7 +71,11 @@ export async function GET(request: NextRequest) {
         id,
         content,
         created_at,
-        user_id
+        user_id,
+        image_url,
+        likes_count,
+        reposts_count,
+        replies_count
         `
       )
       // .in("user_id", [userId]) // Removed user filter for now
@@ -146,14 +150,23 @@ export async function GET(request: NextRequest) {
       const displayNameForHandle = author?.display_name ?? null;
       const addressForHandle = author?.address ?? null;
 
+      // Map the raw DB post data to the Post interface expected by frontend
       return {
-        ...(post as any),
+        id: post.id,
         userId: author?.id || post.user_id,
         userName: author?.display_name || "Anonymous",
         userAvatar:
           author?.avatar_url ||
           `https://api.dicebear.com/7.x/shapes/svg?seed=${post.user_id || "anon"}`,
         userHandle: generateHandle(displayNameForHandle, addressForHandle),
+        content: post.content,
+        createdAt: post.created_at,
+        image_url: post.image_url, // Include image_url in the mapped object
+        likes: post.likes_count || 0,
+        retweets: post.reposts_count || 0,
+        comments: [], // Assuming comments are fetched separately or not needed in main feed
+        verified: false, // Add logic for verification if needed
+        // media: post.media_urls || [], // If you still use media array
       };
     });
     // --- End Combine Data ---
@@ -195,18 +208,28 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { content, media } = body;
-    if (!content) {
+    // Destructure all expected fields, including imageUrl
+    const { content, image_url, reply_to_id, quote_tweet_id } = body;
+
+    // Validate content
+    if (!content && !image_url) {
+      // Allow posts with only an image
       console.log(
-        "❌ [POST /api/posts] Validation Error: Request body missing content."
+        "❌ [POST /api/posts] Validation Error: Request body missing content and image_url."
       );
       return NextResponse.json(
-        { error: "Content is required" },
+        { error: "Content or image_url is required" },
         { status: 400 }
       );
     }
     console.log(
-      `📝 [POST /api/posts] Preparing to create post for user address ${userIdFromSession}: Content='${content}'`
+      `📝 [POST /api/posts] Preparing to create post for user address ${userIdFromSession}:`,
+      {
+        content,
+        image_url,
+        reply_to_id,
+        quote_tweet_id,
+      }
     );
 
     // --- Add step to fetch User UUID from Address ---
@@ -241,16 +264,26 @@ export async function POST(request: NextRequest) {
 
     // 4. Insert the new post using the SERVICE ROLE client with the User's UUID
     console.log(
-      `📝 [POST /api/posts] Inserting post for user UUID ${userUuid}: Content='${content}'`
+      `📝 [POST /api/posts] Inserting post for user UUID ${userUuid}:`,
+      {
+        content,
+        image_url,
+        reply_to_id,
+        quote_tweet_id,
+      }
     );
     const { data: newPostData, error: insertError } = await supabaseServer
       .from("posts")
       .insert({
         user_id: userUuid, // Use the fetched UUID
-        content: content,
-        media_urls: media || [],
+        content: content || null, // Allow null content if image exists
+        image_url: image_url || null, // Save the image URL
+        reply_to_id: reply_to_id || null, // Use correct DB column name: reply_to_id
       })
-      .select() // Select the newly inserted row
+      // Disambiguate the user relationship using the foreign key name
+      .select(
+        "*, user:users!posts_user_id_fkey(id, display_name, avatar_url, address)"
+      )
       .single();
 
     if (insertError || !newPostData) {
@@ -271,7 +304,7 @@ export async function POST(request: NextRequest) {
       .select(
         `
         *,
-        user:users (
+        user:users!posts_user_id_fkey (
           id,
           display_name,
           avatar_url,

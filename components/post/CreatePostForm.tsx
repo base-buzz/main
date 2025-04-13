@@ -1,3 +1,26 @@
+/**
+ * Create Post Form Component (`components/post/CreatePostForm.tsx`)
+ *
+ * What it does:
+ * - Provides a form for users to create new posts, replies, or quote tweets.
+ * - Includes a textarea for content, buttons for adding media/emoji (media currently mocked), and a submit button.
+ * - Adapts placeholder text and submit button label based on whether it's a new post, reply, or quote.
+ *
+ * How it does it:
+ * - Marked as a Client Component ("use client") for state management and form handling.
+ * - Receives `userId` and optional `replyToId`, `quoteTweetId`, `onPostCreated` callback as props.
+ * - Uses `useState` to manage form content, media URLs, submission state, and focus state.
+ * - `handleSubmit` function prevents default form submission, checks for content, sets submitting state.
+ * - Calls `postApi.createPost` to send the data to the backend API (`/api/posts`).
+ * - Resets the form fields on successful submission.
+ * - Calls the optional `onPostCreated` callback (used by `app/post/[id]/page.tsx` for optimistic UI updates on replies).
+ * - Uses `useRouter` to refresh the page data after submission (`router.refresh()`).
+ *
+ * Dependencies for Post Actions:
+ * - `@/lib/api`: Provides `postApi.createPost` for submitting the new post data.
+ * - `@/types/interfaces`: Defines the `Post` interface (used in `onPostCreated` callback).
+ * - `next/navigation`: For `useRouter`.
+ */
 "use client";
 
 import React, { useState, useRef } from "react";
@@ -57,7 +80,8 @@ export default function CreatePostForm({
       const newPost = await postApi.createPost(
         userId,
         content,
-        media.length > 0 ? media : undefined,
+        // Pass only the first image URL if media exists, otherwise undefined
+        media.length > 0 ? media[0] : undefined,
         replyToId, // Pass as parentId
         quoteTweetId // Pass as quotedPostId
       );

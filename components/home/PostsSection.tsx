@@ -1,3 +1,27 @@
+/**
+ * Posts Section Component (`components/home/PostsSection.tsx`)
+ *
+ * What it does:
+ * - Renders the main list/feed of posts on the home page.
+ * - Takes an array of `Post` objects as input.
+ * - Handles the display logic for each post, including avatar, user info, content, media, and action buttons.
+ * - Implements navigation to the post detail page when a post is clicked.
+ *
+ * How it does it:
+ * - Marked as a Client Component ("use client") primarily for the `onClick` navigation handler.
+ * - Receives the list of posts, loading state, and current user ID as props from the parent page (`app/home/page.tsx`).
+ * - Maps over the `posts` array to render each post individually.
+ * - **Important:** This component currently re-implements the rendering logic for a single post, which is very similar to `components/post/PostComponent.tsx`. Ideally, this should be refactored to reuse `PostComponent`.
+ * - Includes helper functions (`formatDate`, `formatNumber`, `generateHandle`, `enhanceContent`) for data presentation.
+ * - Adds an `onClick` handler to the main div wrapping each post to navigate to `/post/[id]` using `useRouter`.
+ * - Displays loading and empty states.
+ *
+ * Dependencies for Post Actions:
+ * - `@/types/interfaces`: Defines the `Post` interface.
+ * - `next/navigation`: For `useRouter` (used for the post click navigation).
+ * - Note: It currently doesn't directly call API functions for actions like liking/retweeting itself,
+ *     as that logic is self-contained within its own rendering code instead of using PostComponent.
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -16,6 +40,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface PostsSectionProps {
   posts: Array<Post & { showPostCount?: boolean }>;
@@ -30,6 +55,14 @@ export function PostsSection({
   currentUserId,
   className,
 }: PostsSectionProps) {
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Set mounted state to true after initial render on the client
+    setIsClientMounted(true);
+  }, []);
+
   // Log post dates to see what's coming in
   React.useEffect(() => {
     if (posts && posts.length > 0) {
@@ -225,8 +258,16 @@ export function PostsSection({
             postData.address || userId
           );
 
-        // Format date - directly use the formatDate function which now has robust error handling
-        const formattedDate = formatDate(post.createdAt);
+        // Format date - use client mounting state to prevent hydration error
+        const formattedDate = isClientMounted
+          ? formatDate(post.createdAt) // Calculate relative time only on client after mount
+          : new Date(post.createdAt || Date.now()).toLocaleDateString(
+              undefined,
+              {
+                month: "short",
+                day: "numeric",
+              }
+            ); // Render full date on server and initial client render
 
         // Format view count - using post interactions for view count simulation
         const views =
@@ -237,7 +278,15 @@ export function PostsSection({
         return (
           <div
             key={post.id}
-            className="cursor-pointer p-4 transition-colors hover:bg-muted/20"
+            className={cn(
+              "cursor-pointer p-4 transition-colors hover:bg-muted/20",
+              post.showPostCount && "border-t border-border pt-2"
+            )}
+            onClick={() => {
+              console.log(`[PostsSection] Navigating to post: ${post.id}`);
+              // Add navigation logic here - requires importing useRouter
+              router.push(`/post/${post.id}`);
+            }}
           >
             <div className="flex">
               <Avatar className="mr-3 h-10 w-10 flex-shrink-0 rounded-full">
@@ -274,16 +323,31 @@ export function PostsSection({
                 <div className="mt-1 whitespace-pre-wrap text-[15px] leading-5">
                   {enhancedContent}
                 </div>
-                {mediaUrl && (
-                  <div className="relative mt-3 aspect-video overflow-hidden rounded-2xl border border-border">
-                    <Image
-                      src={mediaUrl}
-                      alt="Post media"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 500px"
-                    />
-                  </div>
+                {(() => {
+                  console.log(
+                    `[PostsSection] Checking image for post ${post.id}:`,
+                    post.image_url
+                  );
+                  return null;
+                })()}
+                {post.image_url && (
+                  <>
+                    {(() => {
+                      console.log(
+                        `[PostsSection] Rendering image for post ${post.id}`
+                      );
+                      return null;
+                    })()}
+                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg">
+                      <Image
+                        src={post.image_url}
+                        alt="Post image"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 500px"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="-ml-2 mt-3 flex max-w-[425px] justify-between">

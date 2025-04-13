@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icons";
 import { useAccount } from "wagmi";
 import WalletProfileSheet from "@/components/wallet/WalletProfileSheet";
 import Image from "next/image";
+import { DiagnosticInfo } from "@/components/debug/DiagnosticInfo";
 
 // Mock data for trending topics
 const trendingTopics = [
@@ -87,6 +88,9 @@ export default function RightSidebar() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+
+        {/* Insert Diagnostic Info Here */}
+        <DiagnosticInfo />
 
         {/* What's happening section */}
         <div className="rounded-2xl bg-accent/50 p-4">
