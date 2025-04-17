@@ -2,11 +2,14 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import LeftNavigation from "./LeftNavigation";
 import RightSidebar from "./RightSidebar";
 import MobileHeader from "./MobileHeader";
 import { useWalletSheet } from "@/hooks/useWalletSheet";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -18,6 +21,9 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   // Determine if we're on the landing page
   const isLandingPage = pathname === "/";
+
+  // Determine if we're on the compose page
+  const isComposePage = pathname === "/compose";
 
   // Determine if we should show tabs on specific routes
   // const showTabs = pathname.startsWith("/home"); // Keep logic if needed by MobileHeader
@@ -47,6 +53,24 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
         <MobileHeader pathname={pathname} />
         {/* Render page content for mobile view */}
         <main>{children}</main>
+
+        {/* Mobile FAB (Compose Button) - Don't show on compose page */}
+        {!isComposePage && (
+          <Link href="/compose" passHref legacyBehavior>
+            <Button
+              asChild={false}
+              variant="default"
+              size="icon"
+              className={cn(
+                "fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full shadow-lg",
+                "bg-blue-500 hover:bg-blue-600 text-white"
+              )}
+              aria-label="Compose post"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Desktop layout: Render Nav, Children, Sidebar */}

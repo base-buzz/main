@@ -9,8 +9,14 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { id: "for-you", label: "For you", path: "/home" },
   { id: "following", label: "Following", path: "/home?tab=following" },
-  { id: "buildin", label: "Buildin", path: "/home?tab=buildin" },
-  { id: "web3", label: "Web3", path: "/home?tab=web3" },
+  {
+    id: "buildinpublic",
+    label: "BuildinPublic",
+    path: "/home?tab=buildinpublic",
+  },
+  { id: "canto", label: "Canto", path: "/home?tab=canto" },
+  { id: "base-c", label: "Base C", path: "/home?tab=base-c" },
+  // Add more tabs here if needed following the pattern
 ];
 
 export function HomeTabs() {
@@ -18,30 +24,40 @@ export function HomeTabs() {
   const searchParams = new URLSearchParams(
     typeof window !== "undefined" ? window.location.search : ""
   );
-  const currentTab = searchParams.get("tab") || "for-you";
+  // Default to 'for-you' if no tab param or if param is invalid
+  const currentTabParam = searchParams.get("tab");
+  const currentTab =
+    TABS.find((t) => t.id === currentTabParam)?.id || "for-you";
 
   return (
-    <div className="flex w-full border-b border-border">
-      {TABS.map((tab) => {
-        const isActive =
-          tab.id === currentTab || (tab.id === "for-you" && !currentTab);
+    // Add scrolling container
+    <div className="w-full border-b border-border overflow-x-auto whitespace-nowrap no-scrollbar">
+      <div className="flex justify-start md:justify-around">
+        {" "}
+        {/* Adjust alignment */}
+        {TABS.map((tab) => {
+          const isActive = tab.id === currentTab;
 
-        return (
-          <Link
-            key={tab.id}
-            href={tab.path}
-            className={cn(
-              "relative flex flex-1 items-center justify-center px-4 py-3 font-medium transition-colors hover:bg-muted/50",
-              isActive ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            {tab.label}
-            {isActive && (
-              <div className="absolute bottom-0 h-1 w-14 rounded-full bg-primary"></div>
-            )}
-          </Link>
-        );
-      })}
+          return (
+            <Link
+              key={tab.id}
+              href={tab.path}
+              className={cn(
+                // Remove flex-1, add padding/margin for spacing
+                "relative inline-flex items-center justify-center px-4 py-3 font-medium transition-colors hover:bg-muted/50 shrink-0",
+                // Ensure sufficient horizontal padding for touch targets
+                "sm:px-6",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {tab.label}
+              {isActive && (
+                <div className="absolute bottom-0 h-1 w-14 rounded-full bg-blue-500"></div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

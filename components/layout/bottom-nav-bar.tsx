@@ -1,7 +1,7 @@
 "use client"; // Required for potential future state hooks (e.g., active link)
 
 import Link from "next/link";
-import { Home, Search, Bell, Mail, Shapes } from "lucide-react"; // Using lucide-react based on icons.tsx
+import { Home, Search, Bell, Mail, Sparkles } from "lucide-react"; // Using lucide-react based on icons.tsx
 import { Icons } from "@/components/icons"; // Assuming custom Grok icon might be here
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ export function BottomNavigationBar() {
   const navItems = [
     { href: "/home", label: "Home", icon: Home },
     { href: "/explore", label: "Search", icon: Search },
-    { href: "/grok", label: "Grok", icon: Shapes }, // Using Shapes as placeholder
+    { href: "/grok", label: "Grok", icon: Sparkles }, // Use Sparkles as placeholder
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/messages", label: "Messages", icon: Mail },
   ];
