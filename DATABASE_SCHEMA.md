@@ -15,7 +15,7 @@ This document provides a high-level overview of the key tables within the `publi
 - **`users`**
 
   - Stores user profile information.
-  - `id` (UUID, PK): Unique user identifier.
+  - `id` (UUID, PK): Unique user identifier. **This UUID is typically the foreign key linked to the `id` in the `auth.users` table managed by Supabase Auth.**
   - `address` (text): Wallet address, likely used for authentication linking.
   - `handle` (text): User's chosen handle (e.g., `@username`).
   - `display_name` (text): User's display name.
@@ -83,5 +83,6 @@ This document provides a high-level overview of the key tables within the `publi
 
 - **`auth`:** Managed by Supabase Auth. Contains user authentication data (linked to `public.users` likely via UUID).
 - **`storage`:** Managed by Supabase Storage. Contains metadata about stored files (linked via buckets like `post_images`, `profile-media`).
+  - **RLS Policies:** Row Level Security policies are applied to tables like `storage.objects`. For example, the `post_images` bucket requires the user to have the `authenticated` role for `INSERT` operations (uploads), while `SELECT` (reads) from `avatars` and `headers` subfolders are allowed for the `public` role.
 
 _This is a summary based on inspection tools. Refer to specific table schemas or migrations for complete details._

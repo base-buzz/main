@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useWalletSheet } from "@/hooks/useWalletSheet";
-import { useAccount } from "wagmi";
-import { useSession } from "next-auth/react";
+import { useAccount, useSignMessage, useConfig } from "wagmi";
+import { getCsrfToken, signIn, useSession } from "next-auth/react";
+import { SiweMessage } from "siwe";
 import { WalletSheet } from "@/components/ui/wallet/wallet-sheet";
 import { HomeTabs } from "@/components/home/HomeTabs";
 import {
@@ -39,6 +40,88 @@ interface HeaderContent {
   showTabs: boolean;
 }
 
+// --- SIWE Sign-In Logic ---
+// (Adapted from DesktopNavigation.tsx)
+async function handleSignIn(
+  address: `0x${string}` | undefined,
+  chainId: number | undefined,
+  signMessageAsync: ReturnType<typeof useSignMessage>["signMessageAsync"]
+) {
+  try {
+    if (!address || !chainId) {
+      console.error("[MobileSignIn] Address or chainId missing.");
+      // Consider showing a toast or error message to the user
+      return;
+    }
+
+    console.log("[MobileSignIn] Getting CSRF token...");
+    const csrfToken = await getCsrfToken();
+    if (!csrfToken) {
+      console.error("[MobileSignIn] Failed to get CSRF token.");
+      // Show error
+      return;
+    }
+    console.log(
+      "[MobileSignIn] CSRF token obtained:",
+      csrfToken.substring(0, 10) + "..."
+    );
+
+    const message = new SiweMessage({
+      domain: window.location.host,
+      address,
+      statement: "Sign in with Ethereum to Base Buzz app.",
+      uri: window.location.origin,
+      version: "1",
+      chainId,
+      nonce: csrfToken,
+    });
+
+    console.log("[MobileSignIn] Requesting signature...");
+    const signature = await signMessageAsync({
+      message: message.prepareMessage(),
+    });
+    console.log(
+      "[MobileSignIn] Signature obtained:",
+      signature.substring(0, 20) + "..."
+    );
+
+    console.log("[MobileSignIn] Calling signIn('credentials')...");
+    const signInResponse = await signIn("credentials", {
+      message: JSON.stringify(message),
+      signature,
+      redirect: false, // Let useSession handle state update
+    });
+    console.log("[MobileSignIn] signIn response:", signInResponse);
+
+    if (signInResponse?.error) {
+      console.error(
+        "[MobileSignIn] Sign-in callback failed:",
+        signInResponse.error
+      );
+      // Show error toast
+    } else if (signInResponse?.ok) {
+      console.log(
+        "[MobileSignIn] Sign-in successful via credentials, session will update."
+      );
+      // Optionally show success toast
+    } else if (!signInResponse) {
+      console.error(
+        "[MobileSignIn] signIn response was unexpectedly null/undefined"
+      );
+      // Show error toast
+    }
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred.";
+    console.error("[MobileSignIn] Error in handleSignIn:", error);
+    // Show error toast with 'message'
+  } finally {
+    console.log("[MobileSignIn] handleSignIn finished");
+    // Potentially reset any loading state if added
+  }
+}
+// --- End SIWE Sign-In Logic ---
+
 // Define Header Variations
 function getHeaderContent(
   pathname: string,
@@ -47,6 +130,8 @@ function getHeaderContent(
   sessionStatus: string,
   address: `0x${string}` | undefined,
   isConnected: boolean,
+  chainId: number | undefined,
+  signMessageAsync: ReturnType<typeof useSignMessage>["signMessageAsync"],
   openWalletSheet: () => void
 ): HeaderContent {
   // Home Feed ('/home', '/home/following', etc.)
@@ -87,23 +172,52 @@ function getHeaderContent(
           </div>
         </Link>
       ),
-      right:
-        isConnected && address ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openWalletSheet}
-            aria-label="Open wallet sheet"
-            className="flex items-center gap-1.5"
-          >
-            <Wallet className="h-4 w-4" />
-            <span>{truncateAddress(address)}</span>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" onClick={openWalletSheet}>
-            Connect Wallet
-          </Button>
-        ),
+      right: (() => {
+        if (sessionStatus === "authenticated" && isConnected && address) {
+          // Wallet connected AND authenticated via SIWE
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openWalletSheet}
+              aria-label="Open wallet sheet"
+              className="flex items-center gap-1.5"
+            >
+              <Wallet className="h-4 w-4" />
+              <span>{truncateAddress(address)}</span>
+            </Button>
+          );
+        } else if (isConnected && address && sessionStatus !== "loading") {
+          // Wallet connected BUT NOT authenticated via SIWE (and not loading)
+          // Add a loading state for the signing process if desired
+          return (
+            <Button
+              variant="default" // Or another variant to stand out
+              size="sm"
+              onClick={() => handleSignIn(address, chainId, signMessageAsync)}
+              aria-label="Sign in with Ethereum"
+            >
+              Sign In
+            </Button>
+          );
+        } else if (!isConnected && sessionStatus !== "loading") {
+          // Wallet NOT connected (and not loading)
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openWalletSheet} // Should trigger connect modal
+              aria-label="Connect Wallet"
+            >
+              Connect Wallet
+            </Button>
+          );
+        } else {
+          // Loading state (either connecting wallet or checking session)
+          // Render nothing or a skeleton/spinner
+          return <div className="h-9 w-24"></div>; // Placeholder for size matching
+        }
+      })(),
       showTabs: true,
     };
   }
@@ -237,6 +351,8 @@ interface MobileHeaderProps {
 export default function MobileHeader({ pathname }: MobileHeaderProps) {
   const router = useRouter();
   const { isConnected, address } = useAccount();
+  const { chain } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const { data: session, status: sessionStatus } = useSession();
   const { isWalletSheetOpen, openWalletSheet, closeWalletSheet } =
     useWalletSheet();
@@ -255,6 +371,8 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
     sessionStatus,
     address,
     isConnected,
+    chain?.id,
+    signMessageAsync,
     openWalletSheet
   );
 

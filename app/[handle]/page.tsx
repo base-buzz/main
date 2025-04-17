@@ -89,13 +89,11 @@ export default async function HandlePage({ params }: HandlePageProps) {
 
   return (
     <main className="flex min-h-screen w-full flex-col border-x border-border">
-      {/* Comment out the Profile Header */}
-      {/* 
+      {/* Uncomment the Profile Header */}
       <ProfileHeaderClient
         profileUser={typedProfileUser}
         currentUserId={currentUserId}
-      /> 
-      */}
+      />
 
       {/* Tabs for Posts, Replies, etc. */}
       <Tabs defaultValue="posts" className="w-full">

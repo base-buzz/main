@@ -159,3 +159,66 @@ export async function getUserProfileForSession(
     return null;
   }
 }
+
+// Helper function to get the Supabase Auth User ID linked to a public profile
+export async function getSupabaseUserId(
+  address: string
+): Promise<string | null> {
+  if (!supabaseServer) {
+    console.error("getSupabaseUserId - Supabase client unavailable");
+    return null;
+  }
+  const lowerCaseAddress = address.toLowerCase();
+  console.log("getSupabaseUserId - Fetching Supabase Auth User ID", {
+    address: lowerCaseAddress,
+  });
+  try {
+    // IMPORTANT: Assumes your 'users' table has a column named 'auth_user_id'
+    // containing the UUID from the 'auth.users' table. Adjust if needed.
+    const { data, error } = await supabaseServer
+      .from("users")
+      .select("id") // Select the Supabase UUID column (assuming it's 'id')
+      .eq("address", lowerCaseAddress)
+      .single();
+
+    if (error) {
+      if (error.code !== "PGRST116") {
+        // Ignore 'row not found' errors
+        console.error(
+          "getSupabaseUserId - Supabase error fetching auth user ID",
+          {
+            address: lowerCaseAddress,
+            code: error.code,
+            message: error.message,
+          }
+        );
+      }
+      return null;
+    } else if (data?.id) {
+      console.log("getSupabaseUserId - Supabase Auth User ID found", {
+        address: lowerCaseAddress,
+        userId: data.id,
+      });
+      return data.id;
+    } else {
+      console.warn(
+        "getSupabaseUserId - User found but no Auth User ID present?",
+        {
+          address: lowerCaseAddress,
+        }
+      );
+      return null;
+    }
+  } catch (err) {
+    console.error(
+      "getSupabaseUserId - Unexpected error fetching auth user ID",
+      {
+        address: lowerCaseAddress,
+        error: err,
+      }
+    );
+    return null;
+  }
+}
+
+// --- End Helper Functions --- //

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
+import { supabaseServer } from "@/lib/supabase/server";
 import type { Database } from "@/types/supabase";
 
 // --- Check for Storage Bucket Env Var --- //
@@ -29,11 +30,6 @@ export async function POST(request: Request) {
     `✅ [POST /api/profile/upload] Authenticated via NextAuth for address: ${userAddress}`
   );
 
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient<Database>({
-    cookies: () => cookieStore,
-  });
-
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -58,27 +54,56 @@ export async function POST(request: Request) {
     const bucketName = process.env.SUPABASE_STORAGE_BUCKET_PROFILE_MEDIA!;
     const filePath = `${type}s/${fileName}`;
     console.log(
-      `ℹ️ [POST /api/profile/upload] Attempting upload to bucket: '${bucketName}', path: '${filePath}'`
+      `ℹ️ [POST /api/profile/upload] Attempting upload for user: ${userAddress} to bucket: '${bucketName}', path: '${filePath}', file size: ${file.size}`
     );
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucketName)
-      .upload(filePath, file);
+    console.log(
+      `ℹ️ [POST /api/profile/upload] Using Service Role Client for storage operation.`
+    );
+    const { data: uploadData, error: uploadError } =
+      await supabaseServer.storage.from(bucketName).upload(filePath, file);
 
     if (uploadError) {
-      console.error("Supabase Storage upload error:", uploadError);
+      console.error(
+        `❌ [POST /api/profile/upload] Supabase Storage upload error for path '${filePath}':`,
+        uploadError
+      );
+      console.error(
+        `❌ [POST /api/profile/upload] Full Upload Error Object: ${JSON.stringify(
+          uploadError,
+          null,
+          2
+        )}`
+      );
       return NextResponse.json(
         { error: "Failed to upload image", details: uploadError.message },
         { status: 500 }
       );
     }
 
-    const { data: publicUrlData } = supabase.storage
+    console.log(
+      `✅ [POST /api/profile/upload] Supabase Storage upload successful for path '${filePath}'. Data: ${JSON.stringify(
+        uploadData,
+        null,
+        2
+      )}`
+    );
+
+    console.log(
+      `ℹ️ [POST /api/profile/upload] Attempting to get public URL for: ${filePath}`
+    );
+    const { data: publicUrlData } = supabaseServer.storage
       .from(bucketName)
       .getPublicUrl(filePath);
 
     if (!publicUrlData?.publicUrl) {
-      console.error("Failed to get public URL for:", filePath);
+      console.error(
+        `❌ [POST /api/profile/upload] Failed to get public URL for: '${filePath}'. Public URL Data: ${JSON.stringify(
+          publicUrlData,
+          null,
+          2
+        )}`
+      );
       return NextResponse.json(
         { error: "File uploaded but failed to get public URL" },
         { status: 500 }

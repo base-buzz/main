@@ -17,6 +17,8 @@ export interface User {
   created_at: string;
   updated_at: string;
   handle: string | null;
+  following_count?: number;
+  followers_count?: number;
 }
 
 /**

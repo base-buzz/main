@@ -12,7 +12,10 @@ import { z } from "zod";
 import {
   getUserHandle,
   getUserProfileForSession,
+  getSupabaseUserId,
 } from "@/lib/auth/server-helpers";
+// Ensure service client import is removed or commented out
+// import { supabaseServer } from "@/lib/supabase/server";
 
 // --- Environment Variable Checks (Keep them here or move to a separate config loader) --- //
 if (!process.env.NEXTAUTH_SECRET) {
@@ -146,12 +149,31 @@ export const authOptions: NextAuthOptions = {
           lowerCaseAddress: lowerCaseAddress,
         });
         token.address = lowerCaseAddress; // Assign lowercased address
-        // Fetch handle using lowercased address for consistency
         token.handle = user.handle ?? (await getUserHandle(lowerCaseAddress));
+
+        // --- Fetch and add Supabase User ID (sub) --- //
+        const supabaseUserId = await getSupabaseUserId(lowerCaseAddress);
+        if (supabaseUserId) {
+          token.sub = supabaseUserId;
+          console.log("JWT Callback - Added Supabase User ID (sub) to token", {
+            sub: token.sub,
+          });
+        } else {
+          console.warn(
+            "JWT Callback - Could not find Supabase User ID for address",
+            { address: lowerCaseAddress }
+          );
+          // Decide how to handle this: error out? proceed without sub? For now, proceed.
+        }
+        // --- End Supabase User ID fetch --- //
+
         console.log("JWT Callback - Handle added/fetched for initial sign in", {
-          tokenSub: lowerCaseAddress, // Log lowercased address
+          tokenSub: token.sub, // Log the actual sub claim now
           handle: token.handle,
         });
+
+        // --- Ensure NO Supabase Access Token Logic is present --- //
+        // (Placeholder/commented out code related to supabaseAccessToken removed)
       } else if (tokenSub && !token.address) {
         // Runs on subsequent accesses if address needs re-adding
         const originalAddress = tokenSub;
@@ -161,6 +183,29 @@ export const authOptions: NextAuthOptions = {
           originalAddress: originalAddress,
           lowerCaseAddress: lowerCaseAddress,
         });
+
+        // --- Re-fetch Supabase User ID (sub) if missing --- //
+        if (!token.sub) {
+          console.log(
+            "JWT Callback - Attempting to fetch missing Supabase User ID (sub)",
+            { address: lowerCaseAddress }
+          );
+          const supabaseUserId = await getSupabaseUserId(lowerCaseAddress);
+          if (supabaseUserId) {
+            token.sub = supabaseUserId;
+            console.log(
+              "JWT Callback - Fetched missing Supabase User ID (sub) result:",
+              { sub: token.sub }
+            );
+          } else {
+            console.warn(
+              "JWT Callback - Still could not find Supabase User ID for address",
+              { address: lowerCaseAddress }
+            );
+          }
+        }
+        // --- End Supabase User ID re-fetch --- //
+
         // Optionally try to fetch handle again if it wasn't present
         if (!token.handle) {
           console.log("JWT Callback - Attempting to fetch missing handle", {
@@ -195,6 +240,9 @@ export const authOptions: NextAuthOptions = {
       if (userAddress) {
         // Always assign the address from the token
         session.user.address = userAddress;
+
+        // --- Ensure NO Supabase Access Token assignment happens here --- //
+        // (Code block assigning token.supabaseAccessToken to session removed)
 
         try {
           console.log("Session Callback - Fetching user profile via helper", {
