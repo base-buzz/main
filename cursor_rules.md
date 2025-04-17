@@ -8,7 +8,8 @@ This document outlines rules and best practices for the Cursor AI assistant to f
 2.  **Tool Preference:** Prioritize using the available tools (MCP, terminal commands, file system access) over asking the user for information that can be obtained through these tools.
 3.  **Contextual Awareness:** Maintain awareness of the current task, recent changes, and potential implications. If unsure, use tools to gather more context (e.g., read relevant files, check logs).
 4.  **Authentication Context:** When tasks involve user authentication, session management, or access control, **refer to the `AUTHENTICATION.md` document in the project root** to understand the established flow, key files, and best practices before asking the user or making assumptions.
-5.  **Iterative Debugging:** Follow a logical debugging flow. If a fix is attempted, verify its effectiveness using appropriate tools (browser logs, UI checks via screenshot/description, database checks).
+5.  **Database Context:** When tasks involve database interactions (reads, writes, migrations), **refer to the `DATABASE_SCHEMA.md` document in the project root** for an overview of key tables and relationships.
+6.  **Iterative Debugging:** Follow a logical debugging flow. If a fix is attempted, verify its effectiveness using appropriate tools (browser logs, UI checks via screenshot/description, database checks).
 
 ## Specific Tool Usage Guidelines
 
@@ -24,7 +25,7 @@ This document outlines rules and best practices for the Cursor AI assistant to f
 
 3.  **Database Interaction (MCP Supabase Tools):**
 
-    - **Schema/Table Info:** Use `mcp_supabase_get_tables`, `mcp_supabase_get_table_schema` to understand database structure when relevant.
+    - **Schema/Table Info:** Use `mcp_supabase_get_tables`, `mcp_supabase_get_table_schema` to understand database structure when relevant. **Consult `DATABASE_SCHEMA.md` for a high-level overview.**
     - **Data Verification:** Use `mcp_supabase_execute_postgresql` with `SELECT` statements to check if data exists, verify specific field values (e.g., `is_deleted`), or confirm the results of `INSERT`/`UPDATE` operations. Use this _before_ asking the user to check the dashboard manually.
     - **RLS Checks:** If permission errors (`40x` status codes from Supabase API, RLS-related errors) occur, use `mcp_supabase_execute_postgresql` to query `pg_policy` for the relevant table to check RLS rules _before_ asking the user. Consult `AUTHENTICATION.md` for expected Supabase access patterns (service role vs. RLS).
     - **Migrations/Writes:** Use `mcp_supabase_execute_postgresql` for database modifications. Remember to request `UNSAFE` mode via `mcp_supabase_live_dangerously` first for non-read operations and toggle it back off afterwards. Provide descriptive migration names.

@@ -43,7 +43,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface PostsSectionProps {
-  posts: Array<Post & { showPostCount?: boolean }>;
+  posts: Array<Post & { [key: string]: any; showPostCount?: boolean }>;
   loading: boolean;
   currentUserId?: string;
   className?: string;
@@ -238,166 +238,163 @@ export function PostsSection({
         // Enhanced content with emojis if needed
         const enhancedContent = enhanceContent(post.content, index);
 
-        // Get proper user display info - use type assertion to access additional properties
-        // This is necessary since the post object may have properties from the database
-        // that aren't in the Post interface
-        const postData = post as any;
-        const displayName =
-          postData.display_name || post.userName || "Anonymous";
+        // No need for postData assertion now, as props type allows extra fields
+        const displayName = post.display_name || post.userName || "Anonymous"; // Access potential extra fields directly
         const avatarUrl =
-          postData.avatar_url ||
+          post.avatar_url ||
           post.userAvatar ||
           `https://api.dicebear.com/7.x/shapes/svg?seed=${post.userId || index}`;
+        const handle = post.handle || generateHandle(displayName, post.address); // Access potential extra fields directly
 
-        const userId = post.userId || postData.user_id;
-        // Use display_name to generate handle, fall back to address if needed
-        const userHandle =
-          post.userHandle ||
-          generateHandle(
-            postData.display_name || post.userName,
-            postData.address || userId
-          );
-
-        // Format date - use client mounting state to prevent hydration error
-        const formattedDate = isClientMounted
-          ? formatDate(post.createdAt) // Calculate relative time only on client after mount
-          : new Date(post.createdAt || Date.now()).toLocaleDateString(
-              undefined,
-              {
-                month: "short",
-                day: "numeric",
-              }
-            ); // Render full date on server and initial client render
-
-        // Format view count - using post interactions for view count simulation
-        const views =
-          (post.likes + post.retweets + (post.comments?.length || 0)) * 100 ||
-          1000 * (index + 1);
-        const viewCount = formatNumber(views);
+        // Handle post click navigation
+        const handlePostClick = (e: React.MouseEvent<HTMLDivElement>) => {
+          // Prevent navigation if clicking on interactive elements like links or buttons
+          if ((e.target as HTMLElement).closest("a, button")) {
+            return;
+          }
+          router.push(`/post/${post.id}`);
+        };
 
         return (
           <div
             key={post.id}
-            className={cn(
-              "cursor-pointer p-4 transition-colors hover:bg-muted/20",
-              post.showPostCount && "border-t border-border pt-2"
-            )}
-            onClick={() => {
-              console.log(`[PostsSection] Navigating to post: ${post.id}`);
-              // Add navigation logic here - requires importing useRouter
-              router.push(`/post/${post.id}`);
-            }}
+            className="cursor-pointer p-4 transition-colors hover:bg-muted/50"
+            onClick={handlePostClick}
           >
-            <div className="flex">
-              <Avatar className="mr-3 h-10 w-10 flex-shrink-0 rounded-full">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback>{displayName[0] || "?"}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold hover:underline">
-                    {displayName}
-                  </span>
-                  {post.verified && (
-                    <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#1d9bf0] text-xs text-white">
-                      ✓
+            <div className="flex space-x-3">
+              {/* User Avatar Link (for the post author) */}
+              <Link href={`/${handle}`} onClick={(e) => e.stopPropagation()}>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback>
+                    {displayName?.charAt(0).toUpperCase() || "A"}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+
+              <div className="flex-1 space-y-1">
+                {/* User Info & Timestamp */}
+                <div className="flex items-center justify-between">
+                  <Link
+                    href={`/${handle}`}
+                    className="group flex items-center gap-1 whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="font-semibold group-hover:underline">
+                      {displayName}
                     </span>
-                  )}
-                  <span className="text-sm text-muted-foreground hover:underline">
-                    {userHandle.startsWith("@") ? userHandle : `@${userHandle}`}
-                  </span>
-                  <span className="text-sm text-muted-foreground">·</span>
-                  <span className="text-sm text-muted-foreground hover:underline">
-                    {formattedDate}
-                  </span>
-                  <div className="ml-auto">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0]"
-                    >
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      @{handle}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      · {isClientMounted ? formatDate(post.createdAt) : "..."}
+                    </span>
+                  </Link>
+                </div>
+
+                {/* Post Content */}
+                <p className="whitespace-pre-wrap text-sm">{enhancedContent}</p>
+
+                {/* Post Media */}
+                {mediaUrl && (
+                  <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border">
+                    <Image
+                      src={mediaUrl}
+                      alt="Post media"
+                      layout="fill"
+                      objectFit="cover"
+                      unoptimized // Add this if using external URLs without configured domains
+                    />
                   </div>
-                </div>
-                <div className="mt-1 whitespace-pre-wrap text-[15px] leading-5">
-                  {enhancedContent}
-                </div>
-                {(() => {
-                  console.log(
-                    `[PostsSection] Checking image for post ${post.id}:`,
-                    post.image_url
-                  );
-                  return null;
-                })()}
-                {post.image_url && (
-                  <>
-                    {(() => {
-                      console.log(
-                        `[PostsSection] Rendering image for post ${post.id}`
-                      );
-                      return null;
-                    })()}
-                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg">
-                      <Image
-                        src={post.image_url}
-                        alt="Post image"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 500px"
-                      />
-                    </div>
-                  </>
                 )}
 
-                <div className="-ml-2 mt-3 flex max-w-[425px] justify-between">
+                {/* Action Buttons - Now accessing counts directly */}
+                <div className="flex items-center justify-between pt-2 text-muted-foreground">
+                  {/* Reply Button */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-1 rounded-full p-2 text-muted-foreground hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0]"
+                    className="gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Open reply modal/compose view
+                      console.log("Reply clicked for post:", post.id);
+                    }}
                   >
-                    <MessageSquareIcon className="h-[18px] w-[18px]" />
-                    {post.comments?.length > 0 && (
-                      <span className="text-xs">{post.comments?.length}</span>
-                    )}
+                    <MessageSquareIcon className="h-4 w-4" />
+                    <span className="text-xs">
+                      {formatNumber(post.replies_count ?? 0)}{" "}
+                      {/* Direct access */}
+                    </span>
                   </Button>
+                  {/* Repost Button */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-1 rounded-full p-2 text-muted-foreground hover:bg-green-500/10 hover:text-green-500"
+                    className="gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Add repost logic
+                      console.log("Repost clicked for post:", post.id);
+                    }}
                   >
-                    <RepeatIcon className="h-[18px] w-[18px]" />
-                    {post.retweets > 0 && (
-                      <span className="text-xs">{post.retweets}</span>
-                    )}
+                    <RepeatIcon className="h-4 w-4" />
+                    <span className="text-xs">
+                      {formatNumber(post.reposts_count ?? 0)}{" "}
+                      {/* Direct access */}
+                    </span>
                   </Button>
+                  {/* Like Button */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-1 rounded-full p-2 text-muted-foreground hover:bg-pink-500/10 hover:text-pink-500"
+                    className="gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Add like logic
+                      console.log("Like clicked for post:", post.id);
+                    }}
                   >
-                    <HeartIcon className="h-[18px] w-[18px]" />
-                    {post.likes > 0 && (
-                      <span className="text-xs">{post.likes}</span>
-                    )}
+                    <HeartIcon className="h-4 w-4" />
+                    <span className="text-xs">
+                      {formatNumber(post.likes_count ?? 0)}{" "}
+                      {/* Direct access */}
+                    </span>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-1 rounded-full p-2 text-muted-foreground hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0]"
-                  >
-                    <BookmarkIcon className="h-[18px] w-[18px]" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-1 rounded-full p-2 text-muted-foreground hover:bg-[#1d9bf0]/10 hover:text-[#1d9bf0]"
-                  >
-                    <Share2Icon className="h-[18px] w-[18px]" />
-                  </Button>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <BarChart2Icon className="mr-1 h-[18px] w-[18px]" />
-                    <span>{viewCount}</span>
+                  {/* Views */}
+                  <div className="flex items-center gap-1">
+                    <BarChart2Icon className="h-4 w-4" />
+                    <span className="text-xs">
+                      {formatNumber(post.views_count ?? 0)}{" "}
+                      {/* Direct access */}
+                    </span>
+                  </div>
+                  {/* Bookmark & Share Buttons */}
+                  <div className="flex items-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add bookmark logic
+                        console.log("Bookmark clicked for post:", post.id);
+                      }}
+                    >
+                      <BookmarkIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add share logic
+                        console.log("Share clicked for post:", post.id);
+                      }}
+                    >
+                      <Share2Icon className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>

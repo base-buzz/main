@@ -19,32 +19,60 @@ interface HandlePageProps {
 
 export default async function HandlePage({ params }: HandlePageProps) {
   const { handle } = params;
+  let profileUser: User | null = null;
+  let rawProfileUser: any = null; // Temporary variable to hold raw result
 
-  // Fetch the profile user data based on the handle
-  const profileUser = await getUserByHandle(handle);
-  // Assert the type here to satisfy the compiler downstream
-  const typedProfileUser = profileUser as User | null;
+  // 1. Try fetching the profile user data based on the handle
+  rawProfileUser = await getUserByHandle(handle);
 
-  // Fetch the current logged-in user's session (needed for follow/like status later)
+  // 2. If not found by handle, try fetching by address
+  if (!rawProfileUser) {
+    if (handle.startsWith("0x") && handle.length === 42) {
+      console.log(`User not found by handle '${handle}', trying as address...`);
+      rawProfileUser = await getUserByAddress(handle);
+    } else {
+      console.log(
+        `Handle '${handle}' does not look like an address, not attempting address lookup.`
+      );
+    }
+  }
+
+  // Assert the type after fetching, allowing for potential nulls from service
+  const typedProfileUser = rawProfileUser as User | null;
+
+  // Fetch the current logged-in user's session
   const session = await getServerSession(authOptions);
-  const currentUserId = session?.user?.address; // Logged in user's address
+  const currentUserId = session?.user?.address ?? undefined;
 
-  // Fetch full profile for the currently logged-in user (for ComposeBox)
-  // Also assert the type for the current user profile
-  const currentUserProfile = currentUserId
-    ? ((await getUserByAddress(currentUserId)) as User | null)
-    : null;
+  // Fetch full profile for the currently logged-in user
+  let rawCurrentUserProfile: any = null;
+  if (currentUserId) {
+    rawCurrentUserProfile = await getUserByAddress(currentUserId);
+  }
+  const currentUserProfile = rawCurrentUserProfile as User | null;
 
-  // If user not found by handle, show 404
+  // 3. If user still not found, show 404
   if (!typedProfileUser) {
+    console.log(`User not found by handle or address: '${handle}'`);
     notFound();
   }
 
-  // Fetch the posts for this profile user using their actual user ID (UUID)
-  const userPosts = await getUserPosts(typedProfileUser.id || "", 20, 0); // Use ID (UUID)
+  // Fetch the posts for this profile user
+  const userPosts = await getUserPosts(typedProfileUser.id || "", 20, 0);
+
+  // Determine if the viewed profile is the current user's profile
+  // const isCurrentUserProfile = currentUserId === typedProfileUser.address; // Logic is inside ProfileHeaderClient
 
   return (
     <main className="flex min-h-screen w-full flex-col border-x border-border">
+      {/* Comment out the Profile Header */}
+      {/* 
+      <ProfileHeaderClient
+        profileUser={typedProfileUser}
+        currentUserId={currentUserId}
+      /> 
+      */}
+
       {/* Tabs for Posts, Replies, etc. */}
       <Tabs defaultValue="posts" className="w-full">
         <TabsList className="grid w-full grid-cols-4 rounded-none border-b border-border">
@@ -71,24 +99,20 @@ export default async function HandlePage({ params }: HandlePageProps) {
           {/* Posts Count and Section */}
           {userPosts.length > 0 && <ShowPostsCount count={userPosts.length} />}
           <PostsSection
-            // Map the fetched posts to the structure expected by PostsSection
             posts={userPosts.map((post) => ({
-              // Spread the original post object first
-              ...(post as any), // Use 'as any' initially to bypass strict checks
-              // Override/add specific fields needed by PostsSection
-              userId: post.user_id, // Ensure userId is mapped correctly
-              createdAt: post.created_at, // Ensure createdAt is mapped
-              comments: [], // Pass empty array for comments
+              ...(post as any),
+              userId: post.user_id,
+              createdAt: post.created_at,
+              comments: [],
               retweets: post.reposts_count ?? 0,
               likes: post.likes_count ?? 0,
               userName: typedProfileUser.display_name || handle,
               userAvatar: typedProfileUser.avatar_url || "/default-avatar.png",
               userHandle: handle,
-              verified: false, // Ensure verified exists
-              // image_url should be included from the spread '...post'
+              verified: false,
             }))}
-            loading={false} // Data is fetched server-side
-            currentUserId={currentUserId ?? undefined} // Ensure type is string | undefined
+            loading={false}
+            currentUserId={currentUserId ?? undefined}
             className="divide-y divide-border"
           />
         </TabsContent>
