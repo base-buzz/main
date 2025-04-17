@@ -50,6 +50,15 @@ This document outlines rules and best practices for the Cursor AI assistant to f
     - After ensuring changes are committed (or if there were no changes), proceed with `git push`.
     - For other `git` commands, execute them directly but be mindful of the potential impact (e.g., `git reset`, `git checkout`).
 
+## Testing & Verification
+
+1.  **Automated Basic Checks (`scripts/test-auth.sh`):**
+    - This script (`bash scripts/test-auth.sh` or `pnpm test:auth`) uses `curl` with a hardcoded authentication cookie to test the server-side response for the `/home` route.
+    - It verifies that the redirect to the profile page works and checks the resulting HTML for:
+      - Basic page structure (main content column, desktop sidebars).
+      - Rendering of a specific known image URL (`EXPECTED_IMAGE_URL` variable within the script).
+    - Use this script as a quick baseline check after changes potentially affecting authentication, layout, or post rendering.
+
 ## Goal
 
 By following these guidelines, aim to resolve issues more autonomously, reducing the back-and-forth and speeding up the development workflow. When intervention is needed, clearly state the findings from tool usage and the specific decision or information required from the user.

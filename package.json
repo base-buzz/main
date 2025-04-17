@@ -18,7 +18,8 @@
     "test:coverage": "vitest run --coverage",
     "generate-mock-data": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/generate-mock-data.ts",
     "reload": "bash -c '(lsof -ti :3333 | xargs kill -9 || true) && pnpm dev 2>&1 | ts \"[%Y-%m-%d %H:%M:%S]\" | tee server.log'",
-    "test:wallet": "tsx test-wallet-auth.ts"
+    "test:wallet": "tsx test-wallet-auth.ts",
+    "test:auth": "bash scripts/test-auth.sh | tee -a test-auth.log"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "^1.3.1",

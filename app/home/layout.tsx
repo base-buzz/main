@@ -1,27 +1,42 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 export default function HomeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isConnected, status } = useAccount();
+  const { isConnected, status: accountStatus } = useAccount();
+  const { status: sessionStatus } = useSession();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Redirect only if definitively disconnected AND mounted on client
-  if (mounted && status === "disconnected") {
-    redirect("/");
-  }
+  useEffect(() => {
+    if (
+      mounted &&
+      accountStatus === "disconnected" &&
+      sessionStatus === "unauthenticated"
+    ) {
+      console.log(
+        "[CLIENT /home/layout] Wallet disconnected and unauthenticated, redirecting to /..."
+      );
+      router.replace("/");
+    }
+  }, [mounted, accountStatus, sessionStatus, router]);
 
-  if (!mounted || status === "connecting" || status === "reconnecting") {
+  if (
+    !mounted ||
+    accountStatus === "connecting" ||
+    accountStatus === "reconnecting"
+  ) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">

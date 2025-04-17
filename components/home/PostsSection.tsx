@@ -232,8 +232,8 @@ export function PostsSection({
         );
 
         // Get media URL - use post's media if available, otherwise set to undefined
-        const mediaUrl =
-          post.media && post.media.length > 0 ? post.media[0] : undefined;
+        // const mediaUrl =
+        //   post.media && post.media.length > 0 ? post.media[0] : undefined;
 
         // Enhanced content with emojis if needed
         const enhancedContent = enhanceContent(post.content, index);
@@ -295,11 +295,11 @@ export function PostsSection({
                 {/* Post Content */}
                 <p className="whitespace-pre-wrap text-sm">{enhancedContent}</p>
 
-                {/* Post Media */}
-                {mediaUrl && (
+                {/* Post Media - UPDATED TO USE post.image_url */}
+                {post.image_url && (
                   <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg border">
                     <Image
-                      src={mediaUrl}
+                      src={post.image_url}
                       alt="Post media"
                       layout="fill"
                       objectFit="cover"

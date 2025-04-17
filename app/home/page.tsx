@@ -27,48 +27,77 @@ export default function HomePage() {
 
   // Function to fetch posts
   const fetchPosts = useCallback(async () => {
+    // Check authentication status early
+    if (status !== "authenticated" || !user?.id) {
+      console.log(
+        "⚠️ Not authenticated or user ID missing, skipping feed fetch"
+      );
+      setPosts([]);
+      setLoading(false); // Ensure loading stops if not fetching
+      return; // Exit early
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log("🔐 Auth status:", {
-        isWalletConnected,
-        isAuthenticated,
+      console.log(`📊 Fetching user feed via API for ${user.id}...`);
+
+      // Fetch data from the API route
+      const response = await fetch("/api/feed");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API Error: ${response.statusText}`);
+      }
+
+      const rawFeedPosts = await response.json();
+
+      if (!Array.isArray(rawFeedPosts)) {
+        console.error("❌ API response is not an array:", rawFeedPosts);
+        throw new Error("Invalid data format received from API");
+      }
+
+      // Map raw data to Post interface, acknowledging joined user data
+      const fetchedPosts: Post[] = rawFeedPosts.map((post: any) => {
+        const userData = post.users; // Access the joined user data
+        return {
+          id: post.id,
+          userId: post.user_id,
+          content: post.content,
+          createdAt: post.created_at || new Date().toISOString(),
+          image_url: post.image_url,
+          likes: post.likes_count ?? 0,
+          retweets: post.reposts_count ?? 0,
+          comments: [],
+          userName: userData?.display_name || "User",
+          userHandle: userData?.address
+            ? `@${userData.address.slice(-6)}`
+            : `@unknown`,
+          userAvatar: userData?.avatar_url || undefined,
+          verified: userData?.tier === "gold",
+        };
       });
 
-      if (isAuthenticated) {
-        console.log(`📊 Fetching posts with auth...`);
-        const fetchedPosts = await postApi.getPosts();
-
-        console.log(`📝 Received ${fetchedPosts.length} posts`);
-        setPosts(fetchedPosts);
-      } else {
-        console.log("⚠️ Not authenticated, skipping post fetch");
-        setPosts([]);
-      }
+      console.log(
+        `📝 Received and mapped ${fetchedPosts.length} posts from API`
+      );
+      setPosts(fetchedPosts);
     } catch (err) {
-      console.error("❌ Error fetching posts:", err);
-      setError("Failed to fetch posts");
-      setPosts([]);
+      console.error("❌ Error fetching posts via API:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch posts via API"
+      );
+      setPosts([]); // Clear posts on error
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isWalletConnected]);
+  }, [status, user?.id]); // Updated dependencies: only need session status and user ID
 
-  // Fetch posts on initial load and when auth status changes
+  // Fetch posts on initial load and when auth status or user ID changes
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
-
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.handle) {
-      const targetPath = `/${session.user.handle}`;
-      console.log(
-        `[CLIENT /home] Already authenticated, redirecting to ${targetPath}...`
-      );
-      router.replace(targetPath);
-    }
-  }, [status, session, router]);
 
   const handlePostCreated = (newPost: Post) => {
     console.log("✅ Post created, triggering refetch...");

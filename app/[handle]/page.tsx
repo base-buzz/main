@@ -60,6 +60,30 @@ export default async function HandlePage({ params }: HandlePageProps) {
   // Fetch the posts for this profile user
   const userPosts = await getUserPosts(typedProfileUser.id || "", 20, 0);
 
+  // --- Add Server-Side Logging for Post Data ---
+  console.log(`[Server /${handle}] Fetched ${userPosts.length} posts.`);
+  if (userPosts.length > 0) {
+    const postWithImage = userPosts.find(
+      (p) => p.id === "b5c66156-cb8f-477d-906e-b580de35db16"
+    ); // ID of your image post
+    if (postWithImage) {
+      console.log(
+        `[Server /${handle}] Test post found. image_url:`,
+        postWithImage.image_url
+      );
+      if (!postWithImage.image_url) {
+        console.error(
+          `[Server /${handle}] !!! CRITICAL: Test post fetched BUT image_url is MISSING on server!`
+        );
+      }
+    } else {
+      console.warn(
+        `[Server /${handle}] Test post with ID b5c6... not found in fetched posts.`
+      );
+    }
+  }
+  // --- End Logging ---
+
   // Determine if the viewed profile is the current user's profile
   // const isCurrentUserProfile = currentUserId === typedProfileUser.address; // Logic is inside ProfileHeaderClient
 
@@ -103,6 +127,7 @@ export default async function HandlePage({ params }: HandlePageProps) {
               ...(post as any),
               userId: post.user_id,
               createdAt: post.created_at,
+              image_url: post.image_url,
               comments: [],
               retweets: post.reposts_count ?? 0,
               likes: post.likes_count ?? 0,

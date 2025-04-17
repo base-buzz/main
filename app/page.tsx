@@ -18,8 +18,8 @@ export default function RootPage() {
     if (status === "loading") return; // Wait for session status
 
     if (status === "authenticated" && session?.user?.handle) {
-      // If authenticated, redirect to user's handle page
-      const targetPath = `/${session.user.handle}`;
+      // If authenticated, redirect to user's HOME page (like Twitter)
+      const targetPath = "/home"; // Changed from `/${session.user.handle}`
       console.log(`[CLIENT /] Authenticated, redirecting to ${targetPath}...`);
       router.replace(targetPath);
     } else if (isConnected && status === "unauthenticated") {

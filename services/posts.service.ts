@@ -50,25 +50,55 @@ export async function getTrendingPosts(
 
 // Get a user's feed (posts from people they follow)
 export async function getUserFeed(
-  userId: string,
+  userAddress: string,
   limit = 20,
   page = 0
 ): Promise<Post[]> {
+  console.log(`[getUserFeed] Called for address: ${userAddress}`);
   try {
-    // Get IDs of users the current user follows
+    // 1. Find the user's UUID based on their address
+    const { data: userData, error: userError } = await supabaseServer
+      .from("users")
+      .select("id")
+      .eq("address", userAddress.toLowerCase())
+      .single();
+
+    if (userError || !userData) {
+      console.error(
+        `[getUserFeed] Error finding user UUID for address ${userAddress}:`,
+        userError
+      );
+      return [];
+    }
+
+    const userUuid = userData.id;
+    console.log(
+      `[getUserFeed] Found UUID: ${userUuid} for address: ${userAddress}`
+    );
+
+    // 2. Get UUIDs of users the current user follows
     const { data: followingData, error: followingError } = await supabaseServer
       .from("follows")
       .select("following_id")
-      .eq("follower_id", userId);
+      .eq("follower_id", userUuid);
 
-    if (followingError) throw followingError;
+    if (followingError) {
+      console.error(
+        `[getUserFeed] Error fetching follows for UUID ${userUuid}:`,
+        followingError
+      );
+      throw followingError;
+    }
 
-    // Extract the following IDs
-    const followingIds = followingData.map((item) => item.following_id);
-    // Include the user's own posts
-    followingIds.push(userId);
+    // 3. Extract the followed UUIDs
+    const followingUuids = followingData.map((item) => item.following_id);
+    // Include the user's own UUID
+    followingUuids.push(userUuid);
+    console.log(
+      `[getUserFeed] Querying posts for UUIDs: ${followingUuids.join(", ")}`
+    );
 
-    // Query posts from followed users
+    // 4. Query posts from followed users and the user themselves using UUIDs
     const { data, error } = await supabaseServer
       .from("posts")
       .select(
@@ -83,15 +113,28 @@ export async function getUserFeed(
         )
       `
       )
-      .in("user_id", followingIds)
+      .in("user_id", followingUuids)
       .is("is_deleted", false)
       .order("created_at", { ascending: false })
       .range(page * limit, (page + 1) * limit - 1);
 
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.error(
+        `[getUserFeed] Error fetching posts for UUIDs ${followingUuids.join(", ")}:`,
+        error
+      );
+      throw error;
+    }
+
+    console.log(
+      `[getUserFeed] Found ${data?.length ?? 0} posts for address ${userAddress}`
+    );
+    return data || [];
   } catch (error) {
-    console.error("Error getting user feed:", error);
+    console.error(
+      `[getUserFeed] General error for address ${userAddress}:`,
+      error
+    );
     return [];
   }
 }
@@ -123,6 +166,10 @@ export async function getUserPosts(
       .range(page * limit, (page + 1) * limit - 1);
 
     if (error) throw error;
+    console.log(
+      "[getUserPosts] Raw data from Supabase:",
+      JSON.stringify(data, null, 2)
+    );
     return data;
   } catch (error) {
     console.error("Error getting user posts:", error);
