@@ -10,6 +10,7 @@ import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
+import { BottomNavigationBar } from "@/components/layout/bottom-nav-bar";
 
 export const metadata: Metadata = {
   title: {
@@ -89,13 +90,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={cn(
           "min-h-svh bg-background font-sans antialiased",
+          "pb-16 md:pb-0",
           fontSans.variable,
           fontMono.variable
         )}
       >
         <Providers>
-          {/* Restore ThemeProvider and LayoutWrapper */}
-          {/* {children} */}
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -104,8 +104,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
             enableColorScheme
           >
             <LayoutWrapper>{children}</LayoutWrapper>
+            <BottomNavigationBar />
             <TailwindIndicator />
-            <ThemeSwitcher />
             <Analytics />
             <ShadcnToaster />
             <DefaultToaster />
