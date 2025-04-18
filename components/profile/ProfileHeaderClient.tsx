@@ -123,63 +123,69 @@ export function ProfileHeaderClient({
   const followingCount = profileUser.following_count ?? 0;
   const followersCount = profileUser.followers_count ?? 0;
 
+  // Check if the profile being viewed belongs to the current logged-in user
+  const isCurrentUserProfile = currentUserId === profileUser.address;
+
   return (
     <>
-      {/* Banner and Avatar Section */}
-      <div className="relative border-b border-border">
-        {/* Banner Image */}
-        <div className="h-40 w-full bg-muted md:h-52">
+      {/* Banner/Avatar/Button Section - REMOVE border */}
+      <div className="">
+        {" "}
+        {/* Removed border-b border-border */}
+        {/* Header Image */}
+        {/* Apply responsive height */}
+        <div className="relative h-[150px] w-full bg-muted md:h-[200px]">
           {" "}
-          {/* Placeholder background */}
-          <Image
-            src={bannerUrl}
-            alt={`${profileUser.display_name || profileUser.handle}'s banner`}
-            fill
-            style={{ objectFit: "cover" }}
-            priority // Prioritize banner loading
-            unoptimized // If using external/Supabase URLs not in next.config
-          />
-        </div>
-
-        {/* Avatar - Positioned overlapping banner */}
-        <div className="absolute bottom-0 left-4 translate-y-1/2 transform">
-          <Avatar className="h-24 w-24 rounded-full border-4 border-background md:h-32 md:w-32">
-            <AvatarImage
-              src={profileUser.avatar_url || "/default-avatar.png"}
-              alt={profileUser.display_name || profileUser.handle || "Profile"}
+          {/* Reduced height */}
+          {profileUser.header_url && (
+            <Image
+              src={bannerUrl}
+              alt={`${profileUser.display_name || profileUser.handle}'s banner`}
+              fill
+              style={{ objectFit: "cover" }}
+              priority // Prioritize banner loading
+              unoptimized // If using external/Supabase URLs not in next.config
             />
-            <AvatarFallback className="text-3xl md:text-4xl">
-              {(profileUser.display_name || profileUser.handle || "X")
-                .charAt(0)
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          )}
         </div>
+        {/* Wrapper for Avatar AND Edit Button */}
+        <div className="flex items-end justify-between px-4">
+          {/* Avatar */}
+          <div className="relative -mt-[48px] h-[96px] w-[96px]">
+            <Avatar className="h-full w-full rounded-full border-4 border-background">
+              <AvatarImage src={profileUser.avatar_url ?? undefined} />
+              <AvatarFallback className="text-2xl md:text-3xl">
+                {(profileUser.display_name || profileUser.handle || "X")
+                  .charAt(0)
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
 
-        {/* Edit/Follow Button - Positioned top-right below banner area */}
-        <div className="absolute right-4 top-[calc(10rem+0.5rem)] md:top-[calc(13rem+0.5rem)]">
-          {" "}
-          {/* Adjust top based on banner height */}
-          {isOwnProfile ? (
-            <Button variant="outline" onClick={handleEditProfile}>
-              Edit Profile
-            </Button>
-          ) : currentUserId ? (
-            <Button
-              onClick={handleFollowToggle}
-              disabled={isLoadingFollow}
-              variant={isFollowing ? "outline" : "default"}
-            >
-              {isLoadingFollow ? "..." : isFollowing ? "Following" : "Follow"}
-            </Button>
-          ) : null}
+          {/* Edit/Follow Button - Now using flex for positioning */}
+          <div className="pb-4 pt-4">
+            {" "}
+            {/* Added pt-4 */}{" "}
+            {/* Add padding bottom to align with user info */}
+            {isOwnProfile ? (
+              <Button variant="outline" onClick={handleEditProfile}>
+                Edit Profile
+              </Button>
+            ) : currentUserId ? (
+              <Button
+                onClick={handleFollowToggle}
+                disabled={isLoadingFollow}
+                variant={isFollowing ? "outline" : "default"}
+              >
+                {isLoadingFollow ? "..." : isFollowing ? "Following" : "Follow"}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      {/* User Info Section - Below Avatar/Banner */}
-      <div className="border-b border-border p-4 pt-16 md:pt-20">
-        {" "}
-        {/* Add padding top to clear avatar */}
+      {/* User Info Section - REMOVE border, REDUCE top padding */}
+      <div className="px-4 pt-2 md:pt-3">
         {/* Name and Handle */}
         <div>
           <h1 className="text-xl font-bold">

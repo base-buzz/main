@@ -41,6 +41,9 @@ export function useCurrentUser() {
       location: (session.user as any).location ?? null,
       header_url: (session.user as any).header_url ?? null,
       tier: (session.user as any).tier ?? null,
+      // Add mappings for new fields
+      website_url: (session.user as any).website_url ?? null,
+      birth_date: (session.user as any).birth_date ?? null,
       // Fields typically NOT in session, default to null/empty/zero
       buzz_balance: 0,
       ens_name: null,

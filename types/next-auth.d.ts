@@ -11,6 +11,7 @@ declare module "next-auth" {
   // Add custom properties to the Session object returned by useSession/getSession
   interface Session extends DefaultSession {
     user: {
+      id?: string | null;
       address?: string | null;
       handle?: string | null; // Add handle if you manage it
     } & DefaultSession["user"]; // Keep existing fields (name, email, image)

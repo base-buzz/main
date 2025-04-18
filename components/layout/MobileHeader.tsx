@@ -17,6 +17,7 @@ import {
   Upload,
   MoreHorizontal,
   Wallet,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +32,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import SideMenuContent from "./SideMenuContent";
+import { cn } from "@/lib/utils";
 
 // Define expected return type for the function
 interface HeaderContent {
@@ -38,6 +40,7 @@ interface HeaderContent {
   center: React.ReactNode | null;
   right: React.ReactNode | null;
   showTabs: boolean;
+  isTransparent?: boolean; // Ensure this is defined
 }
 
 // --- SIWE Sign-In Logic ---
@@ -219,6 +222,7 @@ function getHeaderContent(
         }
       })(),
       showTabs: true,
+      isTransparent: false, // Home header is NOT transparent
     };
   }
 
@@ -230,27 +234,57 @@ function getHeaderContent(
   ) {
     const content: HeaderContent = {
       left: (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={goBack}
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+        // Wrap button in styled div for circular background
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A202C]/50 hover:bg-[#1A202C]/60 dark:bg-white/20 dark:hover:bg-white/25">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full w-full p-0 text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            onClick={goBack}
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
       ),
       center: null,
       right: (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Search">
-            <Search className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="More options">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
+          {/* Wrap each button in styled div */}
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A202C]/50 hover:bg-[#1A202C]/60 dark:bg-white/20 dark:hover:bg-white/25">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full w-full p-0 text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A202C]/50 hover:bg-[#1A202C]/60 dark:bg-white/20 dark:hover:bg-white/25">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full w-full p-0 text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Grok (Placeholder)"
+            >
+              <Sparkles className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A202C]/50 hover:bg-[#1A202C]/60 dark:bg-white/20 dark:hover:bg-white/25">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full w-full p-0 text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              aria-label="Share"
+            >
+              <Upload className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       ),
       showTabs: false,
+      isTransparent: true, // Profile header IS transparent
     };
     return content;
   }
@@ -280,6 +314,7 @@ function getHeaderContent(
         </div>
       ),
       showTabs: false,
+      isTransparent: false, // Post header is not transparent
     };
     return content;
   }
@@ -302,6 +337,7 @@ function getHeaderContent(
         </Button>
       ),
       showTabs: false,
+      isTransparent: false, // Notifications header is not transparent
     };
     return content;
   }
@@ -324,6 +360,7 @@ function getHeaderContent(
         </Button>
       ),
       showTabs: false,
+      isTransparent: false, // Messages header is not transparent
     };
     return content;
   }
@@ -340,6 +377,7 @@ function getHeaderContent(
     center: null,
     right: null,
     showTabs: false,
+    isTransparent: false, // Default/fallback header is not transparent
   };
   return content;
 }
@@ -358,13 +396,16 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
     useWalletSheet();
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
 
+  // Function to close the side menu
+  const closeSideMenu = () => setIsSideMenuOpen(false);
+
   const goBack = () => {
     router.back();
   };
 
   if (pathname === "/") return null;
 
-  const { left, center, right, showTabs } = getHeaderContent(
+  const { left, center, right, showTabs, isTransparent } = getHeaderContent(
     pathname,
     goBack,
     session,
@@ -378,7 +419,13 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
 
   return (
     <Sheet open={isSideMenuOpen} onOpenChange={setIsSideMenuOpen}>
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header
+        className={cn(
+          "sticky top-0 z-40",
+          !isTransparent &&
+            "border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        )}
+      >
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex flex-1 justify-start">{left}</div>
           <div>{center}</div>
@@ -388,7 +435,7 @@ export default function MobileHeader({ pathname }: MobileHeaderProps) {
       </header>
 
       <SheetContent side="left" className="w-[80%] max-w-sm p-0">
-        <SideMenuContent />
+        <SideMenuContent closeSideMenu={closeSideMenu} />
       </SheetContent>
 
       <WalletSheet open={isWalletSheetOpen} onOpenChange={closeWalletSheet} />

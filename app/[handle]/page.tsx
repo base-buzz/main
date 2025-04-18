@@ -4,6 +4,7 @@ import { getUserByHandle, getUserByAddress } from "@/services/users.service";
 import { getUserPosts } from "@/services/posts.service";
 import { ProfileHeaderClient } from "@/components/profile/ProfileHeaderClient";
 import { ComposeBox } from "@/components/home/ComposeBox";
+import { AnalyticsMock } from "@/components/profile/AnalyticsMock";
 import { ShowPostsCount } from "@/components/home/ShowPostsCount";
 import { PostsSection } from "@/components/home/PostsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -95,52 +96,65 @@ export default async function HandlePage({ params }: HandlePageProps) {
         currentUserId={currentUserId}
       />
 
+      {/* Add the analytics mock box - show only for the logged-in user's profile */}
+      {currentUserId === typedProfileUser.address && (
+        <div className="px-4">
+          <AnalyticsMock />
+        </div>
+      )}
+
       {/* Tabs for Posts, Replies, etc. */}
       <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 rounded-none border-b border-border">
-          {/* TODO: Make tabs dynamic based on content */}
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="replies" disabled>
-            Replies
-          </TabsTrigger>
-          <TabsTrigger value="media" disabled>
-            Media
-          </TabsTrigger>
-          <TabsTrigger value="likes" disabled>
-            Likes
-          </TabsTrigger>
-        </TabsList>
+        {/* Wrapper for horizontal scrolling */}
+        <div className="w-full overflow-x-auto scrollbar-hide border-b border-border">
+          {/* Update TabsList layout for scrolling */}
+          <TabsList className="inline-flex w-auto rounded-none p-0">
+            {" "}
+            {/* Removed grid, w-full; added inline-flex */}
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="replies" disabled>
+              Replies
+            </TabsTrigger>
+            <TabsTrigger value="highlights" disabled>
+              Highlights
+            </TabsTrigger>
+            <TabsTrigger value="videos" disabled>
+              Videos
+            </TabsTrigger>
+            <TabsTrigger value="photos" disabled>
+              Photos
+            </TabsTrigger>
+            <TabsTrigger value="articles" disabled>
+              Articles
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Posts Tab Content */}
-        <TabsContent value="posts">
-          {/* Conditional Compose Box (Show only on own profile) */}
-          {currentUserId === typedProfileUser.address && currentUserProfile && (
-            <ComposeBox user={currentUserProfile} />
-          )}
+        {/* {currentUserId === typedProfileUser.address && currentUserProfile && (
+          <ComposeBox user={currentUserProfile} />
+        )} */}
 
-          {/* Posts Count and Section */}
-          {userPosts.length > 0 && <ShowPostsCount count={userPosts.length} />}
-          <PostsSection
-            posts={userPosts.map((post) => ({
-              ...(post as any),
-              userId: post.user_id,
-              createdAt: post.created_at,
-              image_url: post.image_url,
-              comments: [],
-              retweets: post.reposts_count ?? 0,
-              likes: post.likes_count ?? 0,
-              userName: typedProfileUser.display_name || handle,
-              userAvatar: typedProfileUser.avatar_url || "/default-avatar.png",
-              userHandle: handle,
-              verified: false,
-            }))}
-            loading={false}
-            currentUserId={currentUserId ?? undefined}
-            className="divide-y divide-border"
-          />
-        </TabsContent>
-
-        {/* TODO: Add TabsContent for Replies, Media, Likes */}
+        {/* Posts Count and Section */}
+        {/* {userPosts.length > 0 && <ShowPostsCount count={userPosts.length} />} */}
+        <PostsSection
+          posts={userPosts.map((post) => ({
+            ...(post as any),
+            userId: post.user_id,
+            createdAt: post.created_at,
+            image_url: post.image_url,
+            comments: [],
+            retweets: post.reposts_count ?? 0,
+            likes: post.likes_count ?? 0,
+            userName: typedProfileUser.display_name || handle,
+            userAvatar: typedProfileUser.avatar_url || "/default-avatar.png",
+            userHandle: handle,
+            verified: false,
+          }))}
+          loading={false}
+          currentUserId={currentUserId ?? undefined}
+          className="divide-y divide-border"
+        />
       </Tabs>
     </main>
   );

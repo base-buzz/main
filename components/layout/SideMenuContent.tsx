@@ -26,11 +26,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { NAV_ITEMS } from "@/components/layout/DesktopNavigation"; // Import NAV_ITEMS
 import { cn } from "@/lib/utils"; // Import cn
 
+// Define props for the component
+interface SideMenuContentProps {
+  closeSideMenu: () => void; // Function to close the parent sheet
+}
+
 // TODO: Fetch follower/following counts
 // TODO: Implement actual navigation links and actions
 // TODO: Add Theme switcher logic
 
-export default function SideMenuContent() {
+export default function SideMenuContent({
+  closeSideMenu,
+}: SideMenuContentProps) {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
   const user = session?.user;
@@ -52,7 +59,11 @@ export default function SideMenuContent() {
             <Skeleton className="h-10 w-10 rounded-full mb-2" />
           ) : (
             <div className="flex items-center justify-between">
-              <Link href={`/${user?.handle || "#"}`} className="block">
+              <Link
+                href={`/${user?.handle || "#"}`}
+                className="block"
+                onClick={closeSideMenu} // Close menu on click
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarImage
                     src={user?.image || undefined}
@@ -121,6 +132,7 @@ export default function SideMenuContent() {
                 key={item.label}
                 href={href}
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-lg font-medium hover:bg-accent"
+                onClick={closeSideMenu} // Close menu on click
               >
                 <IconComponent className="h-6 w-6 shrink-0" />
                 <span>{item.label}</span>
@@ -135,6 +147,7 @@ export default function SideMenuContent() {
             <Link
               href="#"
               className="flex items-center gap-3 rounded-md px-3 py-2 font-medium hover:bg-accent"
+              onClick={closeSideMenu} // Close menu on click
             >
               <Download className="h-5 w-5" />
               <span>Download Grok</span>
@@ -142,6 +155,7 @@ export default function SideMenuContent() {
             <Link
               href="/settings"
               className="flex items-center gap-3 rounded-md px-3 py-2 font-medium hover:bg-accent"
+              onClick={closeSideMenu} // Close menu on click
             >
               <Settings className="h-5 w-5" />
               <span>Settings and privacy</span>
@@ -149,7 +163,10 @@ export default function SideMenuContent() {
             {/* Add Theme switcher here */}
             <Button
               variant="ghost"
-              onClick={handleSignOut}
+              onClick={() => {
+                handleSignOut();
+                closeSideMenu(); // Close menu on sign out too
+              }}
               className="w-full justify-start px-3 font-medium"
             >
               <LogOut className="mr-3 h-5 w-5" />

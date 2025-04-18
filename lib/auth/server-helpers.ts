@@ -123,7 +123,7 @@ export async function getUserProfileForSession(
     const { data: userProfile, error } = await supabaseServer
       .from("users")
       .select(
-        "handle, display_name, avatar_url, header_url, bio, location, tier, email"
+        "handle, display_name, avatar_url, header_url, bio, location, tier, email, website_url, birth_date"
       )
       .eq("address", lowerCaseAddress)
       .single();

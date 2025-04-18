@@ -66,6 +66,8 @@ export async function PATCH(request: Request) {
       allowedUpdates.avatar_url = body.avatar_url;
     if (body.header_url !== undefined)
       allowedUpdates.header_url = body.header_url;
+    if (body.website_url !== undefined)
+      allowedUpdates.website_url = body.website_url;
 
     // Ensure we don't update with an empty object
     if (Object.keys(allowedUpdates).length === 0) {
@@ -86,7 +88,7 @@ export async function PATCH(request: Request) {
       .from("users")
       .update(allowedUpdates)
       .eq("id", userId) // Update based on the verified user ID
-      .select()
+      .select("*, website_url, birth_date") // Ensure new fields are selected
       .single();
 
     if (updateError) {

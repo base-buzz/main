@@ -248,41 +248,33 @@ export const authOptions: NextAuthOptions = {
           console.log("Session Callback - Fetching user profile via helper", {
             address: userAddress,
           });
-          // Use the new helper function
           const userProfile = await getUserProfileForSession(userAddress);
-
-          // Process the result from the helper function
           if (userProfile) {
             console.log(
-              "Session Callback - User profile fetched successfully via helper",
-              { address: userAddress }
+              "Session Callback - Assigning profile data to session",
+              {
+                address: userAddress,
+                keys: Object.keys(userProfile).join(", "),
+              }
             );
-            // Populate session.user with fetched data
+            // Assign fetched profile data to session.user
+            session.user.id = token.sub; // Use Supabase ID from token
+            session.user.address = userAddress;
             session.user.handle = userProfile.handle;
-            session.user.name = userProfile.display_name; // Map display_name to session.user.name
-            session.user.image = userProfile.avatar_url; // Map avatar_url to session.user.image
-            session.user.email = userProfile.email; // Map email if needed
-            // Add other fields to session.user (requires casting or extending Session type)
-            (session.user as any).bio = userProfile.bio;
-            (session.user as any).location = userProfile.location;
+            session.user.name = userProfile.display_name; // Explicitly set session.user.name
+            session.user.image = userProfile.avatar_url; // Explicitly set session.user.image
+            // Add other custom fields using type assertion
+            (session.user as any).display_name = userProfile.display_name;
+            (session.user as any).avatar_url = userProfile.avatar_url;
             (session.user as any).header_url = userProfile.header_url;
-            (session.user as any).tier = userProfile.tier;
-
-            // Log the populated session user object for verification
-            // console.log(
-            //   "Session Callback - Populated session.user:",
-            //   session.user
-            // );
-            // Explicitly log the image/avatar URL being set
-            console.log(
-              "Session Callback - Setting session.user.image to:",
-              session.user.image,
-              "for address:",
-              userAddress
-            );
+            (session.user as any).bio = userProfile.bio;
+            (session.user as any).email = userProfile.email; // Keep original email if needed
+            // Add new fields
+            (session.user as any).website_url = userProfile.website_url;
+            (session.user as any).birth_date = userProfile.birth_date;
           } else {
             console.warn(
-              "Session Callback - User profile fetch returned null data without error",
+              "Session Callback - Could not fetch user profile details",
               { address: userAddress }
             );
             // Fallback: Assign handle from token if available

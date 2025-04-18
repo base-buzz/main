@@ -1,4 +1,11 @@
-export type Json =
+[?25l
+    Select a project:                                                                                 
+                                                                                                      
+  >  1. hexjniblpmwvwsmocyfo [name: base-buzz's Project, org: iswogrrbfjlkatfmbdno, region: us-west-1]
+                                                                                                      
+                                                                                                      
+    ↑/k up • ↓/j down • / filter • q quit • ? more                                                    
+                                                                                                      [0D[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[0D[2K [0D[2K[?25h[?1002l[?1003l[?1006lexport type Json =
   | string
   | number
   | boolean
@@ -535,6 +542,51 @@ export type Database = {
           },
         ]
       }
+      scholarships: {
+        Row: {
+          created_at: string | null
+          degree_levels: string[] | null
+          description: string | null
+          fields: string[] | null
+          id: string
+          keywords: string[] | null
+          regions: string[] | null
+          relevance_score: number | null
+          source: string | null
+          source_repo: string | null
+          title: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          degree_levels?: string[] | null
+          description?: string | null
+          fields?: string[] | null
+          id?: string
+          keywords?: string[] | null
+          regions?: string[] | null
+          relevance_score?: number | null
+          source?: string | null
+          source_repo?: string | null
+          title: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          degree_levels?: string[] | null
+          description?: string | null
+          fields?: string[] | null
+          id?: string
+          keywords?: string[] | null
+          regions?: string[] | null
+          relevance_score?: number | null
+          source?: string | null
+          source_repo?: string | null
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       siwe_nonces: {
         Row: {
           expires_at: string
@@ -612,6 +664,7 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           bio: string | null
+          birth_date: string | null
           buzz_balance: number | null
           created_at: string | null
           display_name: string | null
@@ -627,11 +680,13 @@ export type Database = {
           verification_type:
             | Database["public"]["Enums"]["verification_status"]
             | null
+          website_url: string | null
         }
         Insert: {
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           buzz_balance?: number | null
           created_at?: string | null
           display_name?: string | null
@@ -647,11 +702,13 @@ export type Database = {
           verification_type?:
             | Database["public"]["Enums"]["verification_status"]
             | null
+          website_url?: string | null
         }
         Update: {
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           buzz_balance?: number | null
           created_at?: string | null
           display_name?: string | null
@@ -667,6 +724,7 @@ export type Database = {
           verification_type?:
             | Database["public"]["Enums"]["verification_status"]
             | null
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -738,6 +796,7 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           bio: string | null
+          birth_date: string | null
           buzz_balance: number | null
           created_at: string | null
           display_name: string | null
@@ -753,6 +812,7 @@ export type Database = {
           verification_type:
             | Database["public"]["Enums"]["verification_status"]
             | null
+          website_url: string | null
         }[]
       }
       generate_random_content: {
@@ -765,6 +825,7 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           bio: string | null
+          birth_date: string | null
           buzz_balance: number | null
           created_at: string | null
           display_name: string | null
@@ -780,6 +841,7 @@ export type Database = {
           verification_type:
             | Database["public"]["Enums"]["verification_status"]
             | null
+          website_url: string | null
         }[]
       }
     }
